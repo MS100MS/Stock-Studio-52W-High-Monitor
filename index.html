@@ -1,0 +1,1410 @@
+<title>52W High Monitor</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@500;600&display=swap">
+<style>
+/* Layout: terminal-style single column. Upload console on top, KPI strip, series tabs with insight card and charts, daily change monitor, screener table. */
+:root{
+  --bg:#0A0C0F; --panel:#11151A; --panel2:#171C22; --line:#232A33; --line2:#2F3844;
+  --fg:#E7EAEE; --mut:#8D98A5; --dim:#5F6A77;
+  --accent:#FFA028; --accent-soft:rgba(255,160,40,.12); --accent-ink:#1A1000;
+  --good:#3FB950; --bad:#F85149;
+  --c-eq:#4A90E2; --c-fu:#BF822C; --c-sm:#22A586; --c-be:#A070EC; --c-bz:#2D9FBC; --c-st:#E85A9A; --c-ot:#8D98A5;
+  --r1:#FFB04A; --r2:#D68A25; --r3:#8F6428; --r4:#4A4036;
+  --on1:#1A1000; --on2:#1A1000; --on3:#FFF4E0; --on4:#E7EAEE;
+  --f-body:'IBM Plex Sans',system-ui,sans-serif;
+  --f-head:'IBM Plex Sans Condensed','IBM Plex Sans',system-ui,sans-serif;
+  --f-mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){
+  --bg:#ECEFF3; --panel:#FFFFFF; --panel2:#F4F6F8; --line:#D8DEE5; --line2:#C3CBD4;
+  --fg:#12171D; --mut:#566270; --dim:#8893A0;
+  --accent:#B25A00; --accent-soft:rgba(178,90,0,.10); --accent-ink:#FFFFFF;
+  --good:#1A7F37; --bad:#CF222E;
+  --c-eq:#1F6FD1; --c-fu:#A66A00; --c-sm:#0B8F6A; --c-be:#7A45D0; --c-bz:#0E7FA6; --c-st:#C2307F; --c-ot:#566270;
+  --r1:#B25A00; --r2:#D98A2B; --r3:#E7B876; --r4:#D5D9DD;
+  --on1:#FFFFFF; --on2:#12171D; --on3:#12171D; --on4:#12171D;
+  color-scheme:light;
+}}
+:root[data-theme="light"]{
+  --bg:#ECEFF3; --panel:#FFFFFF; --panel2:#F4F6F8; --line:#D8DEE5; --line2:#C3CBD4;
+  --fg:#12171D; --mut:#566270; --dim:#8893A0;
+  --accent:#B25A00; --accent-soft:rgba(178,90,0,.10); --accent-ink:#FFFFFF;
+  --good:#1A7F37; --bad:#CF222E;
+  --c-eq:#1F6FD1; --c-fu:#A66A00; --c-sm:#0B8F6A; --c-be:#7A45D0; --c-bz:#0E7FA6; --c-st:#C2307F; --c-ot:#566270;
+  --r1:#B25A00; --r2:#D98A2B; --r3:#E7B876; --r4:#D5D9DD;
+  --on1:#FFFFFF; --on2:#12171D; --on3:#12171D; --on4:#12171D;
+  color-scheme:light;
+}
+/* mode accents */
+:root[data-mode="low"] .mark{background:var(--bad);color:#fff}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:3px;overflow:hidden;background:var(--panel)}
+.seg button{border:0;background:transparent;padding:6px 13px;font:600 12px var(--f-mono);letter-spacing:.05em;color:var(--mut)}
+.seg button:hover{color:var(--fg)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+:root[data-mode="low"] .seg button[aria-pressed="true"]{background:var(--bad);color:#fff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 var(--f-body);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:18px 56px}
+.wrap{max-width:1440px;margin-inline:auto;display:grid;gap:14px}
+.wrap>*{min-width:0}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.up{color:var(--good)} .dn{color:var(--bad)}
+
+/* top bar */
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px}
+.mark{width:30px;height:30px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font:600 13px var(--f-mono);border-radius:3px}
+.brand h1{margin:0;font:600 19px/1.1 var(--f-head);letter-spacing:.12em;text-transform:uppercase}
+.brand p{margin:2px 0 0;color:var(--mut);font-size:12.5px}
+.top-r{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.chip{border:1px solid var(--line2);background:var(--panel);border-radius:3px;padding:5px 10px;font:500 12px var(--f-mono);color:var(--mut)}
+.chip b{color:var(--fg);font-weight:500}
+.btn{border:1px solid var(--line2);background:var(--panel2);border-radius:3px;padding:6px 12px;font-size:13px}
+.btn:hover{border-color:var(--accent)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn.pri:hover{filter:brightness(1.08)}
+
+/* tape */
+.tape{display:flex;gap:22px;overflow-x:auto;padding:8px 14px;border:1px solid var(--line);background:var(--panel);font:12px var(--f-mono);white-space:nowrap;border-radius:3px}
+.tape span b{font-weight:600;margin-right:6px}
+.tape .lbl{color:var(--accent);letter-spacing:.1em}
+
+/* panels */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:16px;min-width:0}
+.ph{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.panel h2{margin:0;font:600 12.5px var(--f-head);letter-spacing:.1em;text-transform:uppercase;color:var(--fg)}
+.panel h2::before{content:"";display:inline-block;width:8px;height:8px;background:var(--accent);margin-right:8px;vertical-align:0}
+.sub{color:var(--mut);font-size:12.5px}
+
+/* upload */
+.up-grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px}
+.drop{border:1.5px dashed var(--line2);border-radius:4px;padding:22px 18px;display:grid;gap:6px;justify-items:start;align-content:center;background:var(--panel2);transition:border-color .15s,background .15s;min-height:132px}
+.drop.over{border-color:var(--accent);background:var(--accent-soft)}
+.drop strong{font:600 16px var(--f-head);letter-spacing:.03em}
+.drop p{margin:0;color:var(--mut);font-size:13px}
+.ctl{display:grid;gap:10px;align-content:start}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+label.lb{font:500 11px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--mut)}
+input[type=date],input[type=search],select{background:var(--panel2);border:1px solid var(--line2);border-radius:3px;padding:6px 9px;color:var(--fg)}
+.msg{font-size:12.5px;color:var(--mut);margin-top:12px;line-height:1.55}
+.msg.err{color:var(--bad)}
+.msg b{color:var(--fg);font-weight:500}
+.hist{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.hchip{display:inline-flex;align-items:stretch;border:1px solid var(--line2);border-radius:3px;overflow:hidden;font:12px var(--f-mono);background:var(--panel2)}
+.hchip button{border:0;background:transparent;padding:4px 9px}
+.hchip button:hover{background:var(--accent-soft)}
+.hchip button.x{border-left:1px solid var(--line2);color:var(--mut);padding:4px 8px}
+.hchip.on{border-color:var(--accent)}
+.hchip.on .sel{color:var(--accent)}
+
+/* kpis */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:10px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:12px 14px;min-width:0}
+.kpi .l{font:500 10.5px var(--f-mono);letter-spacing:.09em;text-transform:uppercase;color:var(--mut)}
+.kpi .v{font:600 28px/1.15 var(--f-mono);margin:4px 0 2px;font-variant-numeric:tabular-nums}
+.kpi .v.acc{color:var(--accent)}
+.kpi .s{font-size:12px;color:var(--mut)}
+
+/* tabs */
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab{display:flex;align-items:center;gap:8px;border:1px solid var(--line2);background:var(--panel);border-radius:3px;padding:7px 12px}
+.tab:hover{border-color:var(--mut)}
+.tab[aria-selected="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.tab .dot{width:9px;height:9px;border-radius:2px;flex:none}
+.tab .code{font:600 13px var(--f-mono)}
+.tab .n{font:12px var(--f-mono);color:var(--mut)}
+.tab .nm{font-size:12px;color:var(--mut)}
+
+/* insight card */
+.ins{display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr);gap:22px}
+.ins-l .code{font:600 40px/1 var(--f-mono)}
+.ins-l .nm{font:500 13px var(--f-head);letter-spacing:.08em;text-transform:uppercase;color:var(--mut);margin:6px 0 10px}
+.ins-l p{margin:0 0 14px;color:var(--mut);font-size:13px}
+.mini{display:grid;gap:0;border-top:1px solid var(--line)}
+.mini div{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--line);font-size:13px}
+.mini div span:first-child{color:var(--mut)}
+.mini div span:last-child{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.ins-r ul{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.ins-r li{display:grid;grid-template-columns:96px minmax(0,1fr);gap:12px;align-items:baseline;max-width:880px}
+.ins-r li .t{font:500 10.5px var(--f-mono);letter-spacing:.09em;text-transform:uppercase;color:var(--accent)}
+.ins-r li .x{font-size:14px}
+.ins-r li .x em{font-style:normal;font-family:var(--f-mono);font-size:13px}
+
+/* charts */
+.charts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.charts svg{width:100%;height:auto;display:block;overflow:visible}
+.ax{fill:var(--mut);font:10.5px var(--f-mono)}
+.ax2{fill:var(--fg);font:11px var(--f-mono)}
+.gl{stroke:var(--line);stroke-width:1}
+.leg{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:12px;color:var(--mut)}
+.leg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+
+/* monitor */
+.mon{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.mon h3{margin:0 0 8px;font:500 11px var(--f-mono);letter-spacing:.09em;text-transform:uppercase;color:var(--mut)}
+.mon h3 b{color:var(--fg);font-weight:600}
+.pills{display:flex;gap:6px;flex-wrap:wrap}
+.sy{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line2);border-radius:3px;padding:2px 8px;font:12px var(--f-mono);background:var(--panel2)}
+.sy i{width:7px;height:7px;border-radius:2px}
+.empty{color:var(--mut);font-size:13px;margin:0}
+
+/* table */
+.tb{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.tw{overflow:auto;max-height:620px;border:1px solid var(--line);border-radius:3px;margin-top:10px}
+table{border-collapse:collapse;width:100%;font-size:13px;min-width:980px}
+th,td{padding:7px 10px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child,th:nth-child(2),td:nth-child(2){text-align:left}
+thead th{position:sticky;top:0;background:var(--panel2);z-index:1;font:500 10.5px var(--f-mono);letter-spacing:.07em;text-transform:uppercase;color:var(--mut);padding:0}
+thead th button{all:unset;cursor:pointer;display:block;width:100%;padding:8px 10px;box-sizing:border-box}
+thead th button:hover{color:var(--fg)}
+thead th button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+thead th[aria-sort] button{color:var(--accent)}
+tbody tr:hover td{background:var(--accent-soft)}
+td.sym{font:600 13px var(--f-mono)}
+td.m{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.sd{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:7px;vertical-align:0}
+.pill{display:inline-block;font:600 10.5px var(--f-mono);letter-spacing:.05em;padding:2px 7px;border-radius:2px}
+.p0{background:var(--r1);color:var(--on1)} .p1{background:var(--r2);color:var(--on2)}
+.p2{background:var(--r3);color:var(--on3)} .p3{background:var(--r4);color:var(--on4)}
+.tag{font:500 10px var(--f-mono);letter-spacing:.05em;border:1px solid var(--line2);border-radius:2px;padding:1px 5px;margin-left:5px;color:var(--mut)}
+.tag.new{color:var(--accent);border-color:var(--accent)}
+
+#tip{position:fixed;z-index:50;pointer-events:none;background:var(--panel2);border:1px solid var(--line2);border-radius:3px;padding:7px 10px;font:12px/1.5 var(--f-mono);box-shadow:0 6px 20px rgba(0,0,0,.28);max-width:300px}
+#tip b{color:var(--accent);font-weight:600}
+.foot{color:var(--dim);font-size:12px;line-height:1.6}
+
+@media (max-width:900px){
+  .up-grid,.ins,.mon{grid-template-columns:minmax(0,1fr)}
+  .charts{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:520px){
+  .ins-r li{grid-template-columns:minmax(0,1fr);gap:2px}
+  .kpi .v{font-size:24px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* console */
+.console{display:grid;grid-template-columns:minmax(0,380px) minmax(0,1fr);gap:22px}
+.cal-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.cal-top b{font:600 13px var(--f-head);letter-spacing:.1em;text-transform:uppercase}
+.cal-top button{border:1px solid var(--line2);background:var(--panel2);border-radius:3px;width:30px;height:28px;line-height:1}
+.cal-top button:hover{border-color:var(--accent)}
+.cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.dow{font:500 10px var(--f-mono);color:var(--dim);text-align:center;letter-spacing:.08em;padding:2px 0}
+.day{min-height:46px;border:1px solid var(--line);background:var(--panel2);border-radius:3px;padding:4px 5px;text-align:left;display:flex;flex-direction:column;justify-content:space-between;font:500 12px var(--f-mono);position:relative;min-width:0}
+.day .c{font-size:10px;color:var(--dim);white-space:nowrap}
+.day:hover{border-color:var(--mut)}
+.day.we{opacity:.6}
+.day.has{border-color:var(--accent);background:var(--accent-soft)}
+.day.has .c{color:var(--accent);font-weight:600}
+.day.hol .c{color:var(--mut)}
+.day.miss{border-style:dashed;border-color:var(--bad)}
+.day.miss .c{color:var(--bad)}
+.day.sel{outline:2px solid var(--fg);outline-offset:1px}
+.day.off{opacity:.28;cursor:not-allowed}
+.day.over{background:var(--accent-soft);border-color:var(--accent);border-style:solid}
+.day.today::after{content:"";position:absolute;right:4px;top:4px;width:5px;height:5px;border-radius:50%;background:var(--accent)}
+.day.pad{visibility:hidden;border:0}
+.cal-key{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px;font-size:11.5px;color:var(--mut)}
+.cal-key i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px;border:1px solid var(--line2)}
+.cal-key i.h{border-color:var(--accent);background:var(--accent-soft)}
+.cal-key i.m{border:1px dashed var(--bad)}
+
+.rcol{display:grid;gap:14px;align-content:start;min-width:0}
+.selbox{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;border:1px solid var(--line2);border-radius:4px;padding:12px 14px;background:var(--panel2)}
+.selbox .lb2{font:500 10.5px var(--f-mono);letter-spacing:.09em;text-transform:uppercase;color:var(--mut)}
+.selbox .seld{font:600 18px var(--f-head);letter-spacing:.03em;margin-top:2px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.drop{border:1.5px dashed var(--line2);border-radius:4px;padding:16px 18px;display:grid;gap:4px;justify-items:start;background:var(--panel2);transition:border-color .15s,background .15s}
+.drop.over{border-color:var(--accent);background:var(--accent-soft)}
+.drop strong{font:600 15px var(--f-head);letter-spacing:.03em}
+.drop p{margin:0;color:var(--mut);font-size:13px}
+.slotbox .t{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font:500 11px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--mut);margin-bottom:6px}
+.slotbox .t b{color:var(--fg)}
+.slots{display:grid;grid-template-columns:repeat(20,minmax(0,1fr));gap:3px}
+.slots i{height:14px;border-radius:2px;background:var(--line2)}
+.slots i.f{background:var(--accent)}
+.msg{font-size:12.5px;color:var(--mut);line-height:1.55}
+.msg.err{color:var(--bad)}
+.msg b{color:var(--fg);font-weight:500}
+details.bk{border-top:1px solid var(--line);padding-top:10px}
+details.bk summary{cursor:pointer;font:500 11px var(--f-mono);letter-spacing:.08em;text-transform:uppercase;color:var(--mut)}
+details.bk textarea{width:100%;min-height:70px;margin-top:8px;background:var(--panel2);border:1px solid var(--line2);border-radius:3px;padding:8px;font:11px var(--f-mono);color:var(--fg);resize:vertical}
+
+
+[hidden]{display:none!important}
+.view{display:grid;gap:14px;min-width:0}
+.wrap>*,.view>*{min-width:0}
+textarea{font:inherit;color:inherit}
+.heat{overflow-x:auto}
+.heat svg{display:block;height:auto;max-width:none}
+.seg.mode{margin-right:2px}
+.mark{width:34px}
+.day.oth:not(.has){border-color:var(--line2)}
+.day.oth:not(.has) .c{color:var(--mut)}
+.cal-key i.o{border-color:var(--line2);background:var(--panel)}
+.slots.o i.f{background:var(--mut)}
+.slots.a i.f{background:var(--accent)}
+:root[data-mode="low"] .slots.a i.f{background:var(--bad)}
+:root[data-mode="low"] .day.has{border-color:var(--bad);background:rgba(248,81,73,.12)}
+:root[data-mode="low"] .day.has .c{color:var(--bad)}
+:root[data-mode="low"] .tab[aria-selected="true"]{border-color:var(--bad)}
+.pa{background:var(--accent);color:var(--accent-ink)} .pd{background:var(--r4);color:var(--on4)}
+table.ct{min-width:1100px}
+table.ct th:nth-child(n+3),table.ct td:nth-child(n+3){text-align:right}
+.bulk{display:grid;gap:10px}
+.brows{display:grid;gap:6px;max-height:320px;overflow:auto}
+.brow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;border:1px solid var(--line);border-radius:3px;padding:6px 8px;background:var(--panel2)}
+.brow .bn{font:12px var(--f-mono);flex:1 1 160px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.brow .bc{font:11px var(--f-mono);color:var(--mut)}
+.brow .bw{flex:1 0 100%;font-size:12px;color:var(--accent)}
+.brow .bw.dn{color:var(--bad)}
+.brow button[data-x]{border:1px solid var(--line2);background:transparent;border-radius:3px;width:26px;height:26px;color:var(--mut)}
+input[type=date]{background:var(--panel2);border:1px solid var(--line2);border-radius:3px;padding:5px 8px;color:var(--fg)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.seg button[aria-pressed="true"]{font-weight:600}
+@media (max-width:980px){.console{grid-template-columns:minmax(0,1fr)}.charts{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:520px){.day{min-height:40px;padding:3px 4px}}
+
+
+.seg-b{cursor:pointer}.seg-b:hover rect{filter:brightness(1.15)}.seg-b:focus-visible{outline:none}.seg-b:focus-visible rect{stroke:var(--fg);stroke-width:2}
+.seg-hint{margin:12px 0 0;color:var(--mut);font-size:12.5px}
+.seg-d{margin-top:12px;border:1px solid var(--line2);border-radius:4px;background:var(--panel2);padding:10px 12px;display:grid;gap:10px}
+.seg-h{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center;font:500 12px var(--f-mono);letter-spacing:.04em}
+.seg-h i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px}
+.seg-h .btn{padding:3px 9px;font-size:12px}
+.seg-l{display:flex;gap:6px;flex-wrap:wrap;max-height:240px;overflow:auto}
+.sy2{display:inline-flex;gap:8px;align-items:baseline;border:1px solid var(--line2);border-radius:3px;padding:3px 8px;background:var(--panel);font:12px var(--f-mono)}
+.sy2 b{font-weight:600}.sy2 .g{color:var(--mut)}
+</style>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="mark">52</div>
+      <div><h1 id="h1">52W High Monitor</h1><p id="sub0">NSE stocks setting new 52-week highs, by series</p></div>
+    </div>
+    <div class="top-r">
+      <div class="seg mode" role="group" aria-label="Data type"><button type="button" id="mHigh" aria-pressed="true">52W HIGH</button><button type="button" id="mLow" aria-pressed="false">52W LOW</button></div>
+      <div class="seg" role="group" aria-label="View"><button type="button" id="vDay" aria-pressed="true">DAY VIEW</button><button type="button" id="vCum" aria-pressed="false">20-DAY ANALYSIS</button></div>
+      <span class="chip" id="asofChip">AS OF <b>–</b></span>
+      <button class="btn" id="themeBtn" type="button" aria-label="Toggle light or dark theme">Theme</button>
+    </div>
+  </header>
+
+  <section class="panel" aria-label="Calendar and upload">
+    <div class="ph"><h2>Data console</h2><span class="sub">These files carry no date, so pick the trading day in the calendar first, then upload. Highs and lows are saved separately. The latest 20 trading days are kept per type; a 21st day drops the oldest.</span></div>
+    <div class="console">
+      <div>
+        <div class="cal-top"><button type="button" id="calPrev" aria-label="Previous month">‹</button><b id="calTitle"></b><button type="button" id="calNext" aria-label="Next month">›</button></div>
+        <div class="cal-grid" id="cal" role="group" aria-label="Trading calendar"></div>
+        <div class="cal-key"><span><i class="h"></i>Saved (this type)</span><span><i class="o"></i>Other type also saved</span><span><i class="m"></i>Weekday with no data</span></div>
+      </div>
+      <div class="rcol">
+        <div class="selbox">
+          <div><div class="lb2">Uploading to</div><div class="seld" id="selTxt"></div><div class="sub" id="selSub"></div></div>
+          <div class="row"><button class="btn pri" id="upBtn" type="button">Upload file for this day</button><button class="btn" id="nextBtn" type="button">Next day ›</button><button class="btn" id="holBtn" type="button">Mark as holiday</button><button class="btn" id="delBtn" type="button">Delete this day</button></div>
+        </div>
+        <div class="drop" id="drop">
+          <strong>Drop a CSV on the calendar day, or here</strong>
+          <p>A high or a low file is recognised from its column names. One file goes to the selected day. Several files at once open a table where you confirm the date of each one.</p>
+          <div class="row"><button class="btn" id="manyBtn" type="button">Choose several files</button><button class="btn" id="sample" type="button">Load sample data</button></div>
+          <input id="file" type="file" accept=".csv,text/csv,text/plain" hidden><input id="fileMany" type="file" accept=".csv,text/csv,text/plain" multiple hidden>
+        </div>
+        <div class="panel bulk" id="bulk" hidden></div>
+        <div class="slotbox" id="slotbox"></div>
+        <div class="msg" id="msg" role="status"></div>
+        <details class="bk"><summary>Backup and restore</summary>
+          <p class="sub" style="margin:8px 0">Your history lives in this browser only. Copy a backup now and then, and paste it back here to restore on another browser or device.</p>
+          <div class="row"><button class="btn" id="bkCopy" type="button">Copy backup</button><button class="btn" id="bkRestore" type="button">Restore from pasted text</button><button class="btn" id="clearBtn" type="button">Clear this type's history</button></div>
+          <textarea id="bkText" aria-label="Backup text" placeholder="Backup text appears here. Paste a backup here to restore it."></textarea>
+        </details>
+      </div>
+    </div>
+  </section>
+
+  <div class="view" id="dayView">
+    <div class="tape" id="tape" aria-label="Top movers"></div>
+    <section class="kpis" id="kpis" aria-label="Key figures"></section>
+    <nav class="tabs" id="tabs" role="tablist" aria-label="Series"></nav>
+    <section class="panel ins" id="ins" aria-live="polite"></section>
+    <section class="charts">
+      <div class="panel"><div class="ph"><h2 id="t1">Distance from 52W high</h2><span class="sub" id="s1">LTP vs new high. Click a number to list the stocks.</span></div><div id="c1"></div></div>
+      <div class="panel"><div class="ph"><h2>Day change distribution</h2><span class="sub">Stocks by %CHANGE bucket</span></div><div id="c2"></div></div>
+      <div class="panel"><div class="ph"><h2 id="t3">Strongest breakouts</h2><span class="sub" id="s3">New high above previous high, top 10</span></div><div id="c3"></div></div>
+      <div class="panel"><div class="ph"><h2>Age of previous extreme</h2><span class="sub">Days since the old level was set</span></div><div id="c4"></div></div>
+    </section>
+    <section class="panel">
+      <div class="ph"><h2>Daily change monitor</h2><span class="sub" id="monSub"></span></div>
+      <div class="mon" id="mon"></div>
+    </section>
+    <section class="panel">
+      <div class="ph"><h2>Screener</h2><span class="sub" id="tblSub"></span></div>
+      <div class="tb">
+        <input id="q" type="search" placeholder="Search symbol" aria-label="Search symbol">
+        <select id="stf" aria-label="Filter by distance from the extreme">
+          <option value="">All distances</option><option value="0">At the extreme</option><option value="1">Within 1%</option><option value="2">Within 3%</option><option value="3">More than 3% away</option>
+        </select>
+      </div>
+      <div class="tw"><table><thead><tr id="thr"></tr></thead><tbody id="tbody"></tbody></table></div>
+    </section>
+  </div>
+
+  <div class="view" id="cumView" hidden>
+    <section class="panel" id="cumEmpty" hidden><div class="ph"><h2>20-day analysis</h2></div><p class="empty" id="cumEmptyTxt"></p></section>
+    <div class="view" id="cumBody">
+      <section class="kpis" id="ckpis" aria-label="Window figures"></section>
+      <nav class="tabs" id="ctabs" role="tablist" aria-label="Series filter"></nav>
+      <section class="panel ins" id="cins" aria-live="polite"></section>
+      <section class="charts">
+        <div class="panel"><div class="ph"><h2>Stocks per day</h2><span class="sub">Stacked by series, one column per trading day</span></div><div id="d1"></div></div>
+        <div class="panel"><div class="ph"><h2>New highs vs new lows</h2><span class="sub">Market breadth per day, both file types</span></div><div id="d2"></div></div>
+        <div class="panel"><div class="ph"><h2 id="dt3">Closing at the new high</h2><span class="sub">Share of each day's listings with LTP at the extreme</span></div><div id="d3"></div></div>
+        <div class="panel"><div class="ph"><h2>Repeat listers</h2><span class="sub">Days listed in the window</span></div><div id="d4"></div></div>
+        <div class="panel"><div class="ph"><h2>Move since first listed</h2><span class="sub">Latest listed LTP vs first listed LTP</span></div><div id="d5"></div></div>
+        <div class="panel"><div class="ph"><h2>Series across the window</h2><span class="sub">Different stocks per series</span></div><div id="d6"></div></div>
+      </section>
+      <section class="panel"><div class="ph"><h2>Appearance map</h2><span class="sub" id="heatSub"></span></div><div class="heat" id="heat"></div></section>
+      <section class="panel">
+        <div class="ph"><h2>Window screener</h2><span class="sub" id="ctblSub"></span></div>
+        <div class="tb">
+          <input id="cq" type="search" placeholder="Search symbol" aria-label="Search symbol">
+          <select id="cstf" aria-label="Filter by status"><option value="">All stocks</option><option value="a">Still listed on the latest day</option><option value="d">Dropped off</option><option value="r">Listed more than once</option></select>
+        </div>
+        <div class="tw"><table class="ct"><thead><tr id="cthr"></tr></thead><tbody id="ctbody"></tbody></table></div>
+      </section>
+    </div>
+  </div>
+
+  <p class="foot" id="foot"></p>
+</div>
+<div id="tip" hidden></div>
+
+<script>
+const SAMPLE = `SYMBOL ,SERIES ,LTP ,%CHANGE ,NEW 52W/H PRICE ,PREV. HIGH ,PREV. HIGH DATE
+AATMAJ,SM,27,13.45,27,25.5,22-Dec-2025
+AATMAJ,SM,27,13.45,27,0,-
+ALGOQUANT,EQ,85.53,1.18,86.5,84.6,08-Nov-2026
+ANTHEM,EQ,969.3,70.05,989.1,977.55,09-Sep-2026
+ANTHEM,EQ,959,1.77,989.1,977.55,09-Sep-2026
+AONELIQUID,EQ,1085.28,0.03,1106.64,1094.59,08-Jun-2026
+APLLTD,EQ,1019,0.89,1055.7,1039,08-Nov-2026
+ARYAMAN,EQ,700,-0.31,724,715,08-Nov-2026
+ATHERENERG,EQ,1869,482.24,1871.8,1859,08-Nov-2026
+ATHERENERG,EQ,1859.8,2.02,1871.8,1859,08-Nov-2026
+AUROPHARMA,EQ,1855.3,2.84,1856.1,1816.1,08-Nov-2026
+BMETRICS,SM,57.4,17.26,57.4,464.5,-
+BMETRICS,SM,57.4,17.26,57.4,54,10-Nov-2025
+BONDADA,EQ,293.35,6.02,301.85,288,30-Oct-2026
+BONFIG,EQ,702,5.6,706.9,678.5,08-Nov-2026
+CORONA,EQ,2574,142.37,2719.3,2584,06-Nov-2026
+CORONA,EQ,2545.7,0.45,2719.3,2584,06-Nov-2026
+CREDENT,SM,420,2.73,423.9,420.35,30-Sep-2026
+CREDENT,SM,420,2.73,423.9,0,-
+DIVISLAB,EQ,11565.5,4.22,11824,11194,08-Nov-2026
+DSKULKARNI,BE,41.8,1.98,41.8,40.99,08-Nov-2026
+EIMCOELECO,EQ,2495,0.95,2550,2544.7,05-Nov-2026
+ENTERO,EQ,2120,68.52,2137.6,2069,08-Nov-2026
+ENTERO,EQ,2089,3.14,2137.6,2069,08-Nov-2026
+FASCINATE,SM,129.4,4.99,129.4,123.6,08-Nov-2026
+FASCINATE,SM,129.4,4.99,129.4,0,-
+GLAND,EQ,3285,4.86,3374,3208.6,05-Nov-2026
+GLENMARK,EQ,2671.1,2.94,2714,2682.5,06-Nov-2026
+GNRL,EQ,11.73,6.15,12.74,12.63,05-Nov-2026
+GRWRHITECH,EQ,7861,-0.53,8029,7990,06-Aug-2026
+GUFICBIO,EQ,480.95,10.23,480.95,467.8,07-Sep-2026
+HEALTHIETF,EQ,177.6,0.83,180.3,179,08-Nov-2026
+HGSINDIALT,ST,185.2,4.99,185.2,176.4,08-Nov-2026
+HPTL,ST,516.85,0.97,517,516.95,06-Nov-2026
+ICICIBANK,EQ,1589,1.53,1592,1577.8,08-Nov-2026
+IGIL,EQ,425.95,-0.77,440,430.3,08-Nov-2026
+INNOMET,ST,358.1,5,358.1,341.6,08-Nov-2026
+INNOMET,ST,358.1,27.44,358.1,0,-
+IVZBANKNF,EQ,59.68,1.91,59.68,59.15,08-Nov-2026
+KOTAKBANK,EQ,479.9,-63.86,483.2,481.95,08-Nov-2026
+KOTAKBANK,EQ,479.5,-0.21,483.2,481.95,08-Nov-2026
+KRISHANA,EQ,244.99,-1.81,254,251.84,06-Nov-2026
+LALPATHLAB,EQ,2020.6,0.59,2079,2061.9,05-Nov-2026
+LAURUSLABS,EQ,2453.7,633.43,2480,2441.9,02-Nov-2026
+LAURUSLABS,EQ,2454,3.54,2480,2441.9,02-Nov-2026
+LIQUIDCASE,EQ,116.84,0.03,116.84,116.81,08-Nov-2026
+LIQUIDSHRI,EQ,1129.87,0.03,1129.89,1129.57,08-Nov-2026
+LUMAXTECH,EQ,2234.1,-4.15,2503,2385,08-Nov-2026
+MACPOWER,EQ,2330.6,-0.39,2450,2380,08-Nov-2026
+MAKERSL,EQ,268.34,20,268.34,236,25-Aug-2026
+MANAKSTEEL,BE,125.5,2.83,126.6,126,05-Nov-2026
+MANKIND,EQ,2668,147.04,2705,2642,29-Jul-2026
+MANKIND,EQ,2668.3,3.31,2705,2642,29-Jul-2026
+MATRIMONY,EQ,589.9,1.87,589.9,585.7,08-Nov-2026
+MAXENGS,ST,314.45,-4.99,344.4,330.95,08-Nov-2026
+MBAPL,EQ,197.5,-0.67,202.63,200,08-Nov-2026
+MELSTAR,BE,421.16,5,421.16,401.11,08-Nov-2026
+MILTON,ST,60.45,4.95,60.45,57.65,06-Nov-2026
+MOHEALTH,EQ,53.99,0.99,54.49,53.9,08-Nov-2026
+ONELIFECAP,BE,64.5,1.85,66.2,63.51,08-Nov-2026
+PERMAGN,EQ,1188,6.27,1279,1145,27-Oct-2026
+PGIL,EQ,1333,0.87,1413.3,1381.5,05-Nov-2026
+PHARMABEES,EQ,29.8,1.88,30.09,29.4,08-Nov-2026
+PHARMAIETF,EQ,29,1.79,30.99,29.5,30-Oct-2026
+PPLPHARMA,EQ,248.77,2387.7,250.4,247.44,08-Nov-2026
+PPLPHARMA,EQ,245.3,-0.37,250.4,247.44,08-Nov-2026
+PRIZOR,SM,1598,3.38,1625,1559.9,08-Nov-2026
+PRIZOR,SM,1598,3.38,1625,0,-
+PVRINOX,EQ,1590,-0.41,1645.1,1629,05-Nov-2026
+RTL,SM,116.9,16.84,116.9,109,02-Nov-2026
+SAHANA,SM,1073,3.54,1084.5,1040.1,08-Nov-2026
+SAHANA,SM,1073,3.54,1084.5,1131,-
+SAILIFE,EQ,1859.9,238.78,1897.3,1814.9,06-Nov-2026
+SAILIFE,EQ,1836,5.28,1897.3,1814.9,06-Nov-2026
+SBC,EQ,69.2,-0.32,70.08,69.7,08-Nov-2026
+SHEETAL,SM,400.9,0.35,401,401,06-Nov-2026
+SHEETAL,SM,400.9,0.35,401,0,-
+SHETHJI,SM,237,3.72,243.95,235,08-Nov-2026
+SHUKRAPHAR,EQ,82.07,0.6,84.5,84.2,03-Nov-2026
+SILKFLEX,SM,313.2,4.47,322,315.95,06-Nov-2026
+SILKFLEX,SM,313.2,4.47,322,0,-
+SONACOMS,EQ,917.7,215.36,924,918.7,05-Nov-2026
+SONACOMS,EQ,924,1.71,924,918.7,05-Nov-2026
+SOUTHBANK,EQ,58.77,1.28,59.1,58.64,08-Nov-2026
+SPECTRUM,EQ,4592.7,-0.28,4695.2,4634.4,08-Nov-2026
+TAURIAN,ST,690,1.85,693,678,08-Nov-2026
+TEXINFRA,EQ,131,1.52,133.71,130.78,19-Oct-2026
+TFCILTD,EQ,168.6,0.55,172,168.85,08-Nov-2026
+UNOMINDA,EQ,1364,293.82,1368,1355,05-Jan-2026
+UNOMINDA,EQ,1353.8,2.82,1368,1355,05-Jan-2026
+UYFINCORP,BE,30.37,-2.85,31.95,31.7,08-Nov-2026
+VGCL,EQ,65,1.26,69.45,66.7,04-Nov-2026
+VIAZ,SM,88.25,-4.75,97.2,94.5,06-Nov-2026
+VIJSOLX,EQ,826.45,4.04,850,807.6,08-Nov-2026
+VPFL,ST,94,0,94,0,-
+VRLLOG,EQ,328.7,64.89,348.25,348,05-Nov-2026
+VRLLOG,EQ,320.1,0.63,348.25,348,05-Nov-2026
+WESTLIFE,EQ,674.5,1.69,677.85,667.2,08-Nov-2026
+ZETWERK,EQ,171.95,3.91,173,172.78,05-Nov-2026`;
+const SAMPLE_LOW=`Symbol ,Series ,LTP ,%change ,New 52W/L price ,Prev. Low ,Prev. Low Date 
+AHLUCONT,EQ,501,-5.53,500.1,515.1,29-Oct-2026
+AIAENG,EQ,3132,-1.78,3082.7,3086,06-Nov-2026
+AQYLON,EQ,12.37,-4.99,12.37,12.5,29-Oct-2026
+ARVINDFASN,EQ,347.05,-1.64,340.6,342,06-Nov-2026
+BANARISUG,EQ,3072,-3,3061.3,3100,30-Oct-2026
+BASF,EQ,2933.5,-2.84,2919.9,2922.1,06-Nov-2026
+BASILIC,SM,157.5,-2.42,157.45,157.5,06-Nov-2026
+BASILIC,SM,157.5,-2.42,157.45,252.1,-
+BCONCEPTS,EQ,132,-5.04,131.1,131.2,22-Oct-2026
+BCSSL,BE,81.3,-4.99,81.3,85.57,08-Nov-2026
+BELDING,EQ,751,-5.3,738.55,751,30-Oct-2026
+BEWLTD,SM,41.15,-1.08,40.1,41,08-Nov-2026
+BEWLTD,SM,41.15,-1.08,40.1,0,-
+BIRDYS,SM,65.9,-0.9,65.9,66.5,05-Nov-2026
+BIRDYS,SM,65.9,-0.9,65.9,0,-
+BRIGHTOUTD,EQ,369,-1.3,315,345.8,06-Nov-2026
+CEREBRAINT,BZ,2.14,-4.89,2.14,2.25,02-Nov-2026
+CMICABLES,BZ,1.96,-4.39,1.95,2.05,02-Nov-2026
+ELITECON,EQ,6.03,-1.95,5.96,6.1,08-Nov-2026
+EMPOWER,EQ,1.15,-4.96,1.15,1.16,30-Oct-2026
+ENNATURE,BE,205.1,-4.98,205.1,215.85,08-Nov-2026
+FELDVR,BZ,1.96,4.26,1.79,1.8,03-Nov-2026
+GSMFOILS,SM,56.45,-4.97,56.45,57.75,08-Nov-2026
+GSMFOILS,SM,56.45,-4.97,56.45,0,-
+JALAN,SM,1.4,-3.45,1.4,1.4,15-Oct-2026
+JALAN,SM,1.4,-3.45,1.4,0,-
+KIRLFER,EQ,384,-3.18,373.95,380,06-Nov-2026
+LASA,BE,4.22,-4.95,4.22,4.44,02-Nov-2026
+MACOBSTECH,SM,188.5,-3.38,182,189,04-Nov-2026
+MACOBSTECH,SM,188.5,-3.38,182,0,-
+MADHAVIPL,EQ,6.9,-0.58,6.51,6.51,21-Oct-2026
+MKJEWELS,EQ,155.05,-1.82,152.65,157.25,08-Nov-2026
+NAGAFERT,BZ,1.27,-4.51,1.27,1.33,02-Nov-2026
+PHANTOMFX,SM,70.65,-4.72,67.35,151,-
+PHANTOMFX,SM,70.65,-4.72,67.35,70.05,30-Oct-2026
+PIIND,EQ,1712.9,-2.16,1699.4,1716.4,06-Nov-2026
+RAMANEWS,EQ,26.51,-0.71,25.7,26,06-Nov-2026
+READYMIX,SM,48.6,-6.45,48,48.5,06-Nov-2026
+READYMIX,SM,48.6,-6.45,48,0,-
+SIMBHALS,BZ,6.28,1.78,6.05,6.09,08-Nov-2026
+SOUTHWEST,EQ,160.6,-9.84,159.51,166.25,20-Jan-2026
+SPELS,BE,91.83,-5,91.83,96.66,02-Nov-2026
+TEAMLEASE,EQ,999.9,-3.15,985,985,06-Nov-2026
+VIPIND,EQ,238.85,-2.47,238.8,238.95,06-Nov-2026`;
+const SAMPLE_DATE='2026-11-10';
+const CAP=20;
+
+/* ---------- constants & helpers ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const MON={jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+const MN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const MFULL=['January','February','March','April','May','June','July','August','September','October','November','December'];
+const WD=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const SERIES_ORDER=['EQ','FUND','SM','BE','BZ','ST'];
+const SINFO={
+  EQ:{name:'Equity',desc:'Operating companies on the main board in normal rolling settlement. ETFs and liquid funds, which also trade under series EQ, are split out into the FUND tab.'},
+  FUND:{name:'ETFs & liquid funds',desc:'Exchange-traded funds and liquid funds that trade under series EQ. Their 52-week highs follow the fund NAV, not company news, so read them apart from stocks.'},
+  SM:{name:'SME Emerge',desc:'Small and medium enterprises listed on the SME platform. Thin volumes, narrow price bands, large percentage swings.'},
+  BE:{name:'Trade-for-trade',desc:'Main-board stocks moved to trade-for-trade settlement. Every trade is delivery based, so no intraday squaring off.'},
+  BZ:{name:'Trade-for-trade (BZ)',desc:'Trade-for-trade series usually used for securities with listing or compliance flags. Check the exchange circular for the reason. Prices are mostly very low and move in tight bands.'},
+  ST:{name:'SME trade-for-trade',desc:'SME stocks in trade-for-trade settlement. Delivery only, usually with tight daily price bands.'}
+};
+const SC={EQ:'--c-eq',FUND:'--c-fu',SM:'--c-sm',BE:'--c-be',BZ:'--c-bz',ST:'--c-st'};
+const scol=s=>`var(${SC[s]||'--c-ot'})`;
+const STL={high:['AT HIGH','WITHIN 1%','WITHIN 3%','OVER 3% OFF'],low:['AT LOW','WITHIN 1%','WITHIN 3%','OVER 3% UP']};
+const stl=()=>STL[state.mode];
+const hk=m=>m==='low'?'w52.hist.low':'w52.hist';
+const HOL='w52.hol';
+const FUND=/(ETF|BEES|LIQUID|^IVZ)/;
+const grpOf=(sym,ser)=>ser==='EQ'&&FUND.test(sym)?'FUND':ser;
+const num=v=>{const x=parseFloat(String(v).replace(/,/g,''));return isFinite(x)?x:NaN};
+const med=a=>{if(!a.length)return null;const s=[...a].sort((x,y)=>x-y),m=s.length>>1;return s.length%2?s[m]:(s[m-1]+s[m])/2};
+const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
+const sgn=(v,d=2)=>v==null?'–':(v>0?'+':v<0?'−':'')+Math.abs(v).toFixed(d)+'%';
+const fp=v=>v==null?'–':v.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+const f1=v=>v==null?'–':v.toFixed(1)+'%';
+const pDate=s=>{const m=/^(\d{1,2})-([A-Za-z]{3})-(\d{4})$/.exec((s||'').trim());return m&&MON[m[2].toLowerCase()]!=null?Date.UTC(+m[3],MON[m[2].toLowerCase()],+m[1]):null};
+const p2=n=>String(n).padStart(2,'0');
+const isoMs=iso=>Date.parse(iso+'T00:00:00Z');
+const dow=iso=>new Date(isoMs(iso)).getUTCDay();
+const addDays=(iso,n)=>new Date(isoMs(iso)+n*864e5).toISOString().slice(0,10);
+const dispIso=iso=>{const d=new Date(isoMs(iso));return `${p2(d.getUTCDate())} ${MN[d.getUTCMonth()]} ${d.getUTCFullYear()}`};
+const dispLong=iso=>`${WD[dow(iso)]} ${dispIso(iso)}`;
+const shortIso=iso=>`${iso.slice(8)} ${MN[+iso.slice(5,7)-1]}`;
+const todayIso=()=>new Date().toLocaleDateString('en-CA');
+const monthOf=iso=>({y:+iso.slice(0,4),m:+iso.slice(5,7)-1});
+const ISO_RE=/^\d{4}-\d{2}-\d{2}$/;
+const isTD=(iso,hol)=>{const w=dow(iso);return w!==0&&w!==6&&!hol.has(iso)};
+const keyOf=r=>r.sym+'|'+r.ser;
+const seriesList=rows=>{const s=[...new Set(rows.map(r=>r.grp))];return [...SERIES_ORDER.filter(x=>s.includes(x)),...s.filter(x=>!SERIES_ORDER.includes(x)).sort()]};
+const typeLabel=m=>m==='low'?'52-week low':'52-week high';
+
+function splitLine(l){const out=[];let cur='',q=false;for(const ch of l){if(ch==='"')q=!q;else if(ch===','&&!q){out.push(cur);cur=''}else cur+=ch}out.push(cur);return out.map(s=>s.trim())}
+function parseCSV(text){
+  const lines=text.replace(/^﻿/,'').split(/\r?\n/).filter(l=>l.trim());
+  if(!lines.length)throw new Error('The file is empty.');
+  const norm=h=>h.toUpperCase().replace(/[^A-Z0-9]/g,'');
+  const head=splitLine(lines[0]).map(norm);
+  const mode=head.includes('NEW52WLPRICE')?'low':head.includes('NEW52WHPRICE')?'high':null;
+  if(!mode)throw new Error('Could not find a NEW 52W/H PRICE or NEW 52W/L PRICE column. Check that the first row holds the column names.');
+  const X=mode==='low'?'LOW':'HIGH',Y=mode==='low'?'L':'H';
+  const need={sym:'SYMBOL',ser:'SERIES',ltp:'LTP',chg:'CHANGE',nh:'NEW52W'+Y+'PRICE',ph:'PREV'+X,phd:'PREV'+X+'DATE'};
+  const ix={},miss=[];
+  for(const k in need){ix[k]=head.indexOf(need[k]);if(ix[k]<0)miss.push(need[k])}
+  if(miss.length)throw new Error('Missing column(s): '+miss.join(', ')+'. Check that the first row holds the column names.');
+  const rows=[];
+  for(const l of lines.slice(1)){
+    const c=splitLine(l);const sym=(c[ix.sym]||'').trim().toUpperCase();
+    const r={sym,ser:(c[ix.ser]||'').trim().toUpperCase(),ltp:num(c[ix.ltp]),chg:num(c[ix.chg]),nh:num(c[ix.nh]),ph:num(c[ix.ph]),phdS:(c[ix.phd]||'-').trim()};
+    if(!sym||!r.ser||!isFinite(r.ltp))continue;
+    if(!isFinite(r.chg))r.chg=0; if(!isFinite(r.nh))r.nh=r.ltp; if(!isFinite(r.ph))r.ph=0;
+    rows.push(r);
+  }
+  if(!rows.length)throw new Error('No usable rows found.');
+  return {rows,mode};
+}
+function clean(raw){
+  const g=new Map();
+  raw.forEach(r=>{const k=keyOf(r);(g.get(k)||g.set(k,[]).get(k)).push(r)});
+  const kept=[];let merged=0,extreme=0;
+  g.forEach(arr=>{
+    const score=r=>(pDate(r.phdS)!=null?0:1000)+(r.ph>0?0:500)+Math.min(Math.abs(r.chg),999);
+    const sorted=[...arr].sort((a,b)=>score(a)-score(b));
+    kept.push(sorted[0]);merged+=arr.length-1;
+    sorted.slice(1).forEach(r=>{if(Math.abs(r.chg)>30)extreme++});
+  });
+  return {rows:kept,meta:{read:raw.length,kept:kept.length,merged,extreme,noPrev:kept.filter(r=>!(r.ph>0)).length}};
+}
+// nh = new 52-week extreme price, ph = previous extreme. gap = distance from the extreme, brk = size of the break past the old extreme.
+function derive(r,asOf,mode){
+  const lo=mode==='low';
+  r.gap=r.nh>0?Math.max(0,(lo?(r.ltp-r.nh):(r.nh-r.ltp))/r.nh*100):null;
+  r.st=r.gap==null?3:r.gap<=0.01?0:r.gap<=1?1:r.gap<=3?2:3;
+  r.brk=r.ph>0&&r.nh>0?(lo?(r.ph-r.nh)/r.ph:(r.nh/r.ph-1))*100:null;
+  const d=pDate(r.phdS);r.days=d==null?null:Math.max(0,Math.round((asOf-d)/864e5));
+  r.fund=r.ser==='EQ'&&FUND.test(r.sym);r.grp=grpOf(r.sym,r.ser);
+}
+
+
+/* ---------- storage ---------- */
+function loadHist(m=state.mode){try{const h=JSON.parse(localStorage.getItem(hk(m))||'{}');return h&&typeof h==='object'?h:{}}catch(e){return {}}}
+function saveHist(h,m=state.mode){
+  const put=()=>localStorage.setItem(hk(m),JSON.stringify(h));
+  try{put()}catch(e){try{const ks=Object.keys(h).sort();if(ks.length>1){delete h[ks[0]];put()}}catch(e2){}}
+}
+function loadHol(){try{return new Set(JSON.parse(localStorage.getItem(HOL)||'[]'))}catch(e){return new Set()}}
+function saveHol(s){try{localStorage.setItem(HOL,JSON.stringify([...s]))}catch(e){}}
+const pack=rows=>rows.map(r=>[r.sym,r.ser,r.ltp,r.chg,r.nh,r.ph,r.phdS]);
+const unpack=a=>a.map(x=>({sym:x[0],ser:x[1],ltp:x[2],chg:x[3],nh:x[4],ph:x[5],phdS:x[6]}));
+function enforceCap(h){const ks=Object.keys(h).sort(),dropped=[];while(ks.length>CAP){const k=ks.shift();delete h[k];dropped.push(k)}return dropped}
+function saveDay(iso,mode,rows){
+  const h=loadHist(mode),ks=Object.keys(h).sort();
+  if(!h[iso]&&ks.length>=CAP&&iso<ks[0])throw new Error(`${dispLong(iso)} is older than the 20-day ${mode==='low'?'low':'high'} window (${dispIso(ks[0])} to ${dispIso(ks[ks.length-1])}), so it was not saved.`);
+  const replaced=!!h[iso];h[iso]=pack(rows);
+  const dropped=enforceCap(h);saveHist(h,mode);
+  return {replaced,dropped};
+}
+
+/* ---------- state ---------- */
+const defSort=m=>({k:'chg',d:m==='low'?1:-1});
+const state={cur:null,mode:'high',view:'day',seg:null,tab:'ALL',ctab:'ALL',sort:defSort('high'),csort:{k:'days',d:-1},q:'',stf:'',cq:'',cstf:'',sel:null,cal:monthOf(todayIso()),WB:null,W:null,bulk:null};
+function setCur(iso,rows,meta,sample){state.seg=null;
+  rows.forEach(r=>derive(r,isoMs(iso),state.mode));
+  state.cur={iso,rows,meta,sample,mode:state.mode};
+}
+function openDay(iso,mode){
+  const h=loadHist(mode);if(!h[iso])return false;
+  state.mode=mode;const rows=unpack(h[iso]);
+  setCur(iso,rows,{read:rows.length,kept:rows.length,merged:0,extreme:0,noPrev:rows.filter(r=>!(r.ph>0)).length},false);return true;
+}
+function loadSample(skipRender){
+  const p=parseCSV(state.mode==='low'?SAMPLE_LOW:SAMPLE);state.mode=p.mode;
+  const c=clean(p.rows);setCur(SAMPLE_DATE,c.rows,c.meta,true);state.tab='ALL';
+  if(!skipRender){setMsg(`<b>Sample data</b> (your attached ${typeLabel(p.mode)} file): ${c.meta.kept} stocks. It is not saved. Pick a day and upload to start your history.`);renderAll()}
+}
+
+/* ---------- window model ---------- */
+function slotList(dates,hol){
+  if(!dates.length)return [];
+  const out=[],end=dates[dates.length-1],have=new Set(dates);
+  for(let d=dates[0];d<=end;d=addDays(d,1)){if(have.has(d)||isTD(d,hol))out.push(d)}
+  return out;
+}
+function buildWindow(mode){
+  const h=loadHist(mode),dates=Object.keys(h).sort(),hol=loadHol(),slots=slotList(dates,hol);
+  const sidx={};slots.forEach((d,i)=>sidx[d]=i);
+  const perDay={},sets={},map=new Map();
+  dates.forEach(d=>{
+    const rows=unpack(h[d]);rows.forEach(r=>derive(r,isoMs(d),mode));
+    perDay[d]=rows;sets[d]=new Set(rows.map(keyOf));
+    rows.forEach(r=>{
+      const k=keyOf(r);let s=map.get(k);if(!s){s={key:k,sym:r.sym,ser:r.ser,apps:[]};map.set(k,s)}
+      s.apps.push({iso:d,ltp:r.ltp,chg:r.chg,gap:r.gap,st:r.st,brk:r.brk});s.grp=r.grp;s.fund=r.fund;
+    });
+  });
+  const last=dates[dates.length-1];
+  const stocks=[...map.values()].map(s=>{
+    const a=s.apps,f=a[0],l=a[a.length-1];
+    s.days=a.length;s.fi=f.iso;s.li=l.iso;s.fl=f.ltp;s.ll=l.ltp;
+    s.move=a.length>1&&f.ltp>0?(l.ltp/f.ltp-1)*100:null;
+    s.avgChg=avg(a.map(x=>x.chg));s.ext=a.filter(x=>x.st===0).length;s.active=l.iso===last;
+    let re=0;for(let i=1;i<a.length;i++)if(sidx[a[i].iso]-sidx[a[i-1].iso]>1)re++;
+    s.re=re;return s;
+  });
+  return {mode,dates,slots,sidx,perDay,sets,stocks,last};
+}
+function streakOf(W,key,iso){let n=0;for(let i=W.sidx[iso];i>=0;i--){const s=W.sets[W.slots[i]];if(s&&s.has(key))n++;else break}return n}
+function unionSlots(){
+  const hol=loadHol(),d=[...new Set([...Object.keys(loadHist('high')),...Object.keys(loadHist('low'))])].sort();
+  return {dates:d,slots:slotList(d,hol)};
+}
+
+/* ---------- messages ---------- */
+function setMsg(html,err){const m=$('#msg');m.className='msg'+(err?' err':'');m.innerHTML=html}
+const setErr=t=>setMsg(esc(t),true);
+const metaText=(meta,mode)=>`${meta.read} rows read, <b>${meta.kept} unique stocks</b> kept. `+
+  (meta.merged?`${meta.merged} repeated rows merged (kept the row with a valid previous-${mode==='low'?'low':'high'} date and the smaller %CHANGE${meta.extreme?`; ${meta.extreme} had a %CHANGE above 30% and look like feed glitches`:''}). `:'No repeated rows. ')+
+  (meta.noPrev?`${meta.noPrev} stock${meta.noPrev>1?'s have':' has'} no previous ${mode==='low'?'low':'high'} on file.`:'');
+
+/* ---------- selection & upload ---------- */
+function hasAny(iso){return !!(loadHist('high')[iso]||loadHist('low')[iso])}
+function nextOpenAny(from){
+  const hol=loadHol(),t=todayIso();let d=addDays(from,1);
+  for(let i=0;i<14;i++){if(d>t)return from;if(isTD(d,hol)&&!hasAny(d))return d;d=addDays(d,1)}
+  return from;
+}
+function nextTD(d){const hol=loadHol();for(let i=0;i<10;i++){d=addDays(d,1);if(isTD(d,hol))return d}return d}
+function prevTD(d){const hol=loadHol();for(let i=0;i<10;i++){d=addDays(d,-1);if(isTD(d,hol))return d}return d}
+function latestTD(){let d=todayIso();const hol=loadHol();for(let i=0;i<10&&!isTD(d,hol);i++)d=addDays(d,-1);return d}
+function initSel(){
+  const u=unionSlots().dates;
+  state.sel=u.length?nextOpenAny(u[u.length-1]):latestTD();
+  state.cal=monthOf(state.sel);
+}
+function selectDay(iso){
+  state.sel=iso;state.cal=monthOf(iso);
+  const hs=loadHist(state.mode);
+  if(hs[iso]){openDay(iso,state.mode);state.tab='ALL';setMsg(`Showing <b>${dispLong(iso)}</b> (${typeLabel(state.mode)}). Upload a file to replace it, or delete it.`)}
+  else if(loadHist(state.mode==='low'?'high':'low')[iso])setMsg(`Selected <b>${dispLong(iso)}</b>. It has ${typeLabel(state.mode==='low'?'high':'low')} data but no ${typeLabel(state.mode)} data yet.`);
+  else setMsg(`Selected <b>${dispLong(iso)}</b>. No data yet. Use the upload button, or drop a file on this day.`);
+  renderAll();
+}
+function advanceAfter(iso){
+  const other=state.mode==='low'?'high':'low';let note='';
+  if(loadHist(other)[iso]){const nx=nextOpenAny(iso);state.sel=nx;state.cal=monthOf(nx);if(nx!==iso)note=` Both file types are saved for that day. Next day to fill: <b>${dispLong(nx)}</b>.`}
+  else note=` The ${typeLabel(other)} file for this day is not uploaded yet. Add it, or use Next day.`;
+  return note;
+}
+function uploadOne(text,name,iso){
+  const p=parseCSV(text),c=clean(p.rows);
+  if(p.mode!==state.mode){state.mode=p.mode;state.sort=defSort(p.mode);try{localStorage.setItem('w52.mode',p.mode)}catch(e){}}
+  const r=saveDay(iso,p.mode,c.rows);
+  openDay(iso,p.mode);state.tab='ALL';state.ctab='ALL';
+  let note=`<b>${esc(name)}</b> (${typeLabel(p.mode)} file) saved to <b>${dispLong(iso)}</b>. ${metaText(c.meta,p.mode)}`;
+  if(r.replaced)note+=' It replaced the data already on that day.';
+  if(r.dropped.length)note+=` Dropped the oldest ${p.mode==='low'?'low':'high'} day (${r.dropped.map(dispIso).join(', ')}) to keep ${CAP}.`;
+  note+=advanceAfter(iso);
+  setMsg(note);renderAll();
+}
+const readText=f=>new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result));r.onerror=()=>rej(new Error('A file could not be read.'));r.readAsText(f)});
+async function handleFiles(files,iso){
+  files=[...files];if(!files.length)return;
+  try{
+    if(files.length===1)uploadOne(await readText(files[0]),files[0].name,iso||state.sel);
+    else stageBulk(await Promise.all(files.map(async f=>({name:f.name,text:await readText(f),lm:f.lastModified||0}))));
+  }catch(e){setErr(e.message)}
+}
+function deleteDay(iso){
+  const h=loadHist(state.mode);if(!h[iso])return;
+  delete h[iso];saveHist(h,state.mode);
+  const ks=Object.keys(h).sort();
+  if(state.cur&&!state.cur.sample&&state.cur.iso===iso){if(ks.length)openDay(ks[ks.length-1],state.mode);else loadSample(true)}
+  setMsg(`Deleted the ${typeLabel(state.mode)} data for <b>${dispLong(iso)}</b>.`);renderAll();
+}
+function toggleHoliday(iso){
+  if(hasAny(iso)){setErr('This day has data. Delete the data first if it was a holiday.');return}
+  const s=loadHol();if(s.has(iso))s.delete(iso);else s.add(iso);saveHol(s);
+  setMsg(`${dispLong(iso)} is ${s.has(iso)?'marked as a market holiday and will not be flagged as missing':'no longer marked as a holiday'}.`);renderAll();
+}
+function switchMode(m){
+  if(state.mode===m)return;
+  state.mode=m;state.tab='ALL';state.ctab='ALL';state.sort=defSort(m);state.stf='';
+  try{localStorage.setItem('w52.mode',m)}catch(e){}
+  const hs=loadHist(m),ks=Object.keys(hs).sort();
+  if(hs[state.sel])openDay(state.sel,m);else if(ks.length)openDay(ks[ks.length-1],m);else loadSample(true);
+  renderAll();
+}
+
+/* ---------- bulk assign (files carry no date) ---------- */
+function fileDate(name){
+  let m=/(\d{4})-(\d{2})-(\d{2})/.exec(name),iso=null;
+  if(m)iso=`${m[1]}-${m[2]}-${m[3]}`;
+  else if((m=/(\d{1,2})[-_ ]([A-Za-z]{3})[-_ ](\d{4})/.exec(name))&&MON[m[2].toLowerCase()]!=null)iso=`${m[3]}-${p2(MON[m[2].toLowerCase()]+1)}-${p2(m[1])}`;
+  else if((m=/(?:^|\D)(\d{2})(\d{2})(\d{4})(?:\D|$)/.exec(name)))iso=`${m[3]}-${m[2]}-${m[1]}`;
+  if(!iso||!ISO_RE.test(iso)||isNaN(isoMs(iso))||new Date(isoMs(iso)).toISOString().slice(0,10)!==iso)return null;
+  return iso;
+}
+function autoAssign(rows,start){
+  ['high','low'].forEach(m=>{
+    const un=rows.filter(r=>!r.err&&r.mode===m&&!r.fd).sort((a,b)=>a.lm-b.lm||a.name.localeCompare(b.name,undefined,{numeric:true}));
+    let d=start;un.forEach((r,i)=>{if(i>0)d=nextTD(d);r.date=d});
+  });
+}
+function stageBulk(items){
+  const rows=items.map(it=>{
+    try{const p=parseCSV(it.text),fd=fileDate(it.name);return {name:it.name,text:it.text,lm:it.lm,mode:p.mode,n:p.rows.length,fd,date:fd}}
+    catch(e){return {name:it.name,err:e.message}}
+  });
+  const undated=Math.max(0,...['high','low'].map(m=>rows.filter(r=>!r.err&&r.mode===m&&!r.fd).length));
+  let start=latestTD();for(let i=1;i<undated;i++)start=prevTD(start);
+  autoAssign(rows,start);state.bulk={rows,start};renderBulk();
+  setMsg(`<b>${rows.filter(r=>!r.err).length}</b> files read. Check the date of each one in the table below, then save.`);
+}
+function bulkFlags(b){
+  const t=todayIso(),seen={},out=b.rows.map(()=>[]);
+  b.rows.forEach((r,i)=>{
+    if(r.err)return;
+    if(!r.date){out[i].push('Pick a date.');return}
+    if(r.date>t)out[i].push('This date is in the future, so the file will be skipped.');
+    const w=dow(r.date);if(w===0||w===6)out[i].push('This is a weekend. Save it only if there was a special session.');
+    const k=r.mode+'|'+r.date;if(k in seen){out[i].push('Same type and date as another file. The later one wins.');out[seen[k]].push('Same type and date as another file. The later one wins.')}else seen[k]=i;
+  });
+  return out;
+}
+function renderBulk(){
+  const el=$('#bulk'),b=state.bulk;
+  if(!b){el.hidden=true;el.innerHTML='';return}
+  const fl=bulkFlags(b),okN=b.rows.filter(r=>!r.err&&r.date&&r.date<=todayIso()).length;
+  el.hidden=false;
+  el.innerHTML=`<div class="ph"><h2>Assign dates</h2><span class="sub">Highs and lows are numbered separately, oldest file first.</span></div>`+
+    `<div class="row"><label class="lb" for="bStart">First undated file goes to</label><input type="date" id="bStart" value="${b.start}"><button class="btn" type="button" id="bRe">Re-assign</button></div>`+
+    `<div class="brows">${b.rows.map((r,i)=>r.err
+      ?`<div class="brow"><span class="bn" title="${esc(r.name)}">${esc(r.name)}</span><span class="bw dn">${esc(r.err)}</span><button type="button" data-x="${i}" aria-label="Remove ${esc(r.name)}">×</button></div>`
+      :`<div class="brow"><span class="bn" title="${esc(r.name)}">${esc(r.name)}</span><span class="pill ${r.mode==='low'?'p3':'p0'}">${r.mode==='low'?'52W LOW':'52W HIGH'}</span><span class="bc">${r.n} rows</span><input type="date" data-i="${i}" value="${r.date||''}" aria-label="Date for ${esc(r.name)}"><button type="button" data-x="${i}" aria-label="Remove ${esc(r.name)}">×</button>${fl[i].length?`<span class="bw">${fl[i].map(esc).join(' ')}</span>`:''}</div>`).join('')}</div>`+
+    `<div class="row"><button class="btn pri" type="button" id="bSave" ${okN?'':'disabled'}>Save ${okN} ${okN===1?'file':'files'}</button><button class="btn" type="button" id="bCancel">Cancel</button></div>`;
+}
+function saveBulk(){
+  const b=state.bulk;if(!b)return;
+  const t=todayIso(),ok=b.rows.filter(r=>!r.err&&r.date&&r.date<=t).sort((a,c)=>a.date.localeCompare(c.date));
+  const saved=[],dropped=[],skip=[];
+  b.rows.forEach(r=>{if(r.err)skip.push(`${r.name} (${r.err})`);else if(!r.date||r.date>t)skip.push(`${r.name} (no valid date)`)});
+  ok.forEach(r=>{try{const p=parseCSV(r.text),c=clean(p.rows),res=saveDay(r.date,r.mode,c.rows);saved.push(r);dropped.push(...res.dropped.map(d=>`${shortIso(d)} (${r.mode})`))}catch(e){skip.push(`${r.name} (${e.message})`)}});
+  state.bulk=null;
+  const tH=saved.filter(r=>r.mode==='high').length,tL=saved.filter(r=>r.mode==='low').length;
+  if(saved.length){
+    if(!saved.some(r=>r.mode===state.mode))state.mode=saved[0].mode;
+    const ks=Object.keys(loadHist(state.mode)).sort();openDay(ks[ks.length-1],state.mode);state.tab='ALL';state.ctab='ALL';state.sort=defSort(state.mode);
+    const u=unionSlots().dates,nx=nextOpenAny(u[u.length-1]);state.sel=nx;state.cal=monthOf(nx);
+  }
+  let note=saved.length?`Saved <b>${saved.length}</b> files: ${tH} high, ${tL} low.`:'No files were saved.';
+  if(dropped.length)note+=` Dropped the oldest days (${dropped.join(', ')}) to keep ${CAP} per type.`;
+  if(skip.length)note+=` <span class="dn">Skipped: ${skip.map(esc).join('; ')}.</span>`;
+  setMsg(note,!saved.length);renderAll();
+}
+
+/* ---------- backup ---------- */
+function backupText(){return JSON.stringify({v:2,high:loadHist('high'),low:loadHist('low'),hol:[...loadHol()]})}
+function restore(text){
+  let o;try{o=JSON.parse(text)}catch(e){throw new Error('That text is not a valid backup.')}
+  if(!o||(typeof o.high!=='object'&&typeof o.low!=='object'))throw new Error('That text is not a valid backup.');
+  let n=0,dr=0;
+  ['high','low'].forEach(m=>{
+    if(!o[m]||typeof o[m]!=='object')return;
+    const h=loadHist(m);
+    Object.keys(o[m]).forEach(k=>{const a=o[m][k];if(ISO_RE.test(k)&&Array.isArray(a)&&a.every(x=>Array.isArray(x)&&x.length>=7)){h[k]=a;n++}});
+    dr+=enforceCap(h).length;saveHist(h,m);
+  });
+  const hs=loadHol();(Array.isArray(o.hol)?o.hol:[]).forEach(d=>{if(ISO_RE.test(d))hs.add(d)});saveHol(hs);
+  const ks=Object.keys(loadHist(state.mode)).sort();if(ks.length)openDay(ks[ks.length-1],state.mode);initSel();
+  setMsg(`Restored <b>${n}</b> ${n===1?'day':'days'} from the backup.${dr?` Kept the latest ${CAP} per type, dropped ${dr} older.`:''}`);renderAll();
+}
+
+function visible(){return state.tab==='ALL'?state.cur.rows:state.cur.rows.filter(r=>r.grp===state.tab)}
+function names(arr,n=3,fn){return arr.slice(0,n).map(fn||(r=>r.sym)).join(', ')}
+function insights(rows,key,all){
+  const n=rows.length,out=[],lo=state.mode==='low';
+  if(!n)return [{t:'Series',x:'No stocks in this series today.'}];
+  const at=rows.filter(r=>r.st===0).length,w1=rows.filter(r=>r.st<=1).length,w3=rows.filter(r=>r.st<=2).length,far=n-w3;
+  const share=(n/all.length*100).toFixed(0);
+  out.push({t:'Breadth',x:lo
+    ?`<em>${n}</em> stocks, ${share}% of the list. <em>${at}</em> trade right at the new low, <em>${w1}</em> sit within 1% above it and <em>${far}</em> ${far===1?'has':'have'} bounced more than 3% off it.`
+    :`<em>${n}</em> stocks, ${share}% of the list. <em>${at}</em> trade right at the new high, <em>${w1}</em> sit within 1% of it and <em>${far}</em> ${far===1?'has':'have'} slipped more than 3% below.`});
+  const up=rows.filter(r=>r.chg>0).length,dn=rows.filter(r=>r.chg<0).length;
+  const byChg=[...rows].sort((a,b)=>b.chg-a.chg),best=byChg[0],worst=byChg[byChg.length-1];
+  out.push({t:'Momentum',x:lo
+    ?`${up} up, ${dn} down, ${n-up-dn} flat. Median move <em>${sgn(med(rows.map(r=>r.chg)))}</em>. Hardest hit <em>${esc(worst.sym)} ${sgn(worst.chg)}</em>${best.chg>0?`, strongest rebound <em>${esc(best.sym)} ${sgn(best.chg)}</em>`:''}.`
+    :`${up} up, ${dn} down, ${n-up-dn} flat. Median move <em>${sgn(med(rows.map(r=>r.chg)))}</em>. Leader <em>${esc(best.sym)} ${sgn(best.chg)}</em>${worst.chg<0?`, laggard <em>${esc(worst.sym)} ${sgn(worst.chg)}</em>`:''}.`});
+  const bk=rows.filter(r=>r.brk!=null).sort((a,b)=>b.brk-a.brk);
+  if(bk.length){const w=bk[0],t=bk[bk.length-1],m=med(bk.map(r=>r.brk));
+    out.push({t:lo?'Breakdown':'Breakout',x:lo
+      ?`Median break below the previous low is <em>${m.toFixed(2)}%</em>. Deepest is <em>${esc(w.sym)} −${w.brk.toFixed(2)}%</em> (₹${fp(w.ph)} down to ₹${fp(w.nh)}). Tightest is <em>${esc(t.sym)}</em>, ${t.brk<0.005?'level with its previous low':`only −${t.brk.toFixed(2)}% through the old floor`}.`
+      :`Median break above the previous high is <em>${m.toFixed(2)}%</em>. Widest is <em>${esc(w.sym)} +${w.brk.toFixed(2)}%</em> (₹${fp(w.ph)} to ₹${fp(w.nh)}). Tightest is <em>${esc(t.sym)}</em>, ${t.brk<0.005?'level with its previous high':`only +${t.brk.toFixed(2)}% through the old level`}.`})}
+  const dd=rows.filter(r=>r.days!=null);
+  if(dd.length){
+    const fresh=dd.filter(r=>r.days<=7).length,old=dd.filter(r=>r.days>90).sort((a,b)=>b.days-a.days);
+    const lng=old.length?`, longest bases: ${esc(names(old,3,r=>`${r.sym} (${r.days}d)`))}`:'';
+    out.push({t:'Base age',x:lo
+      ?`<em>${fresh}</em> of ${dd.length} set their previous low within the last week, so the slide is continuing. <em>${old.length}</em> broke down after more than 90 days above the old floor${lng}.`
+      :`<em>${fresh}</em> of ${dd.length} set their previous high within the last week, so they are extending a run. <em>${old.length}</em> broke out after more than 90 days${lng}.`});
+  }
+  const fade=rows.filter(r=>r.gap>3).sort((a,b)=>b.gap-a.gap);
+  if(fade.length)out.push(lo
+    ?{t:'Bounced',x:`${fade.length} closed over 3% above their low, a sign of an intraday recovery: <em>${esc(names(fade,3,r=>`${r.sym} ${r.gap.toFixed(1)}% up`))}</em>.`}
+    :{t:'Faded',x:`${fade.length} closed over 3% below their high, a sign of an intraday spike that did not hold: <em>${esc(names(fade,3,r=>`${r.sym} ${r.gap.toFixed(1)}% off`))}</em>.`});
+  if(lo){
+    const rev=rows.filter(r=>r.chg>0).sort((a,b)=>b.chg-a.chg);
+    if(rev.length)out.push({t:'Reversal',x:`<em>${rev.length}</em> trade higher on the day despite printing a new 52-week low: <em>${esc(names(rev,4,r=>`${r.sym} ${sgn(r.chg)}`))}</em>. A recovery from the low is worth watching, but one session does not confirm it.`});
+  }
+  const funds=rows.filter(r=>r.fund);
+  if(!lo&&key==='FUND'&&funds.length){const liq=funds.filter(r=>/LIQUID/.test(r.sym)),etf=funds.filter(r=>!/LIQUID/.test(r.sym));
+    out.push({t:'Fund mix',x:`<em>${liq.length}</em> liquid funds${liq.length?` (${esc(names(liq,3))}) with a median move of ${sgn(med(liq.map(r=>r.chg)))}`:''}. These behave like cash, so a new high is just accrued interest, not a breakout. <em>${etf.length}</em> index or sector ETFs${etf.length?` (${esc(names(etf,4))}) with a median move of ${sgn(med(etf.map(r=>r.chg)))}`:''}; these carry the real market signal.`})}
+  if(!lo&&key==='ALL'&&funds.length){const rest=rows.filter(r=>!r.fund);
+    out.push({t:'Funds',x:`<em>${funds.length}</em> are ETFs or liquid funds (${esc(names(funds,4))}). Their median move is ${sgn(med(funds.map(r=>r.chg)))} against ${sgn(med(rest.map(r=>r.chg)))} for the rest, so judge them apart from operating companies. Open the FUND tab for detail.`})}
+  if(lo){
+    const circ=rows.filter(r=>r.chg<=-4.9&&r.chg>=-5.05);
+    if(circ.length)out.push({t:'Price band',x:`<em>${circ.length}</em> closed 4.9% to 5% down, which matches a 5% daily band at the lower limit: ${esc(names(circ,5))}. Sellers may outnumber buyers at those prices.`});
+  }else{
+    const circ=rows.filter(r=>r.ser!=='EQ'&&r.chg>=4.9&&r.chg<=5.01);
+    if(circ.length)out.push({t:'Price band',x:`<em>${circ.length}</em> closed between 4.9% and 5%, which matches a 5% daily band: ${esc(names(circ,5))}. Demand may be capped by the band, not by lack of buyers.`});
+  }
+  if(key==='ALL'){
+    const ss=seriesList(rows).map(s=>{const a=rows.filter(r=>r.grp===s);return {s,n:a.length,at:a.filter(r=>r.st===0).length/a.length,m:med(a.map(r=>r.chg))}});
+    if(ss.length>1){const top=[...ss].sort((a,b)=>b.at-a.at)[0],mv=[...ss].sort((a,b)=>lo?a.m-b.m:b.m-a.m)[0];
+      out.push({t:'By series',x:`<em>${top.s}</em> has the highest share trading at the ${lo?'low':'high'} (${(top.at*100).toFixed(0)}%). <em>${mv.s}</em> has the ${lo?'weakest':'strongest'} median move (${sgn(mv.m)}). ${ss.map(x=>`${x.s} ${x.n}`).join(', ')}.`})}
+  }
+  return out;
+}
+
+
+const tipA=h=>`data-tip="${esc(h)}"`;
+function niceMax(m){const steps=[1,2,5,10,20,25,50,100];for(const s of steps){if(m/s<=5)return {step:s,max:Math.max(1,Math.ceil(m/s))*s}}return {step:200,max:Math.ceil(m/200)*200}}
+function legend(items){return `<div class="leg">${items.map(i=>`<span><i style="background:${i.c}"></i>${esc(i.l)}</span>`).join('')}</div>`}
+
+function chartStatus(all){
+  const ss=seriesList(all),W=560,rh=46,H=ss.length*rh+6,L=96,bw=W-L-4,sg=state.seg;
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Distance from the 52-week extreme by series. Click a number to list its stocks.">`;
+  ss.forEach((se,i)=>{
+    const a=all.filter(r=>r.grp===se),y=i*rh+6,op=state.tab==='ALL'||state.tab===se?1:.32;
+    s+=`<g style="opacity:${op}"><rect x="0" y="${y+6}" width="9" height="9" rx="2" style="fill:${scol(se)}"/><text class="ax2" x="16" y="${y+14}">${esc(se)}</text><text class="ax" x="16" y="${y+30}">${a.length} stocks</text>`;
+    let x=L;const cnt=[0,1,2,3].map(k=>a.filter(r=>r.st===k).length);
+    cnt.forEach((c,k)=>{
+      if(!c)return;const w=c/a.length*bw,on=sg&&sg.s===se&&sg.k===k,dim=sg&&!on?.45:1;
+      const tt=`<b>${esc(se)}</b> · ${stl()[k]}<br>${c} of ${a.length} stocks (${(c/a.length*100).toFixed(0)}%)<br>Click to list them`;
+      s+=`<g class="seg-b${on?' on':''}" data-seg="${esc(se)}|${k}" tabindex="0" role="button" aria-label="${esc(se)}, ${stl()[k]}, ${c} stocks. Show names" aria-pressed="${on?'true':'false'}" ${tipA(tt)} style="opacity:${dim}">`+
+        `<rect x="${x}" y="${y}" width="${Math.max(w-2,6)}" height="26" rx="2" style="fill:var(--r${k+1})"/>`+
+        (on?`<rect x="${x}" y="${y}" width="${Math.max(w-2,6)}" height="26" rx="2" style="fill:none;stroke:var(--fg);stroke-width:2"/>`:'')+
+        (w>22?`<text x="${x+(w-2)/2}" y="${y+17}" text-anchor="middle" style="fill:var(--on${k+1});font:600 11px var(--f-mono);pointer-events:none">${c}</text>`:'')+`</g>`;
+      x+=w;
+    });
+    s+='</g>';
+  });
+  return s+'</svg>'+legend([0,1,2,3].map(k=>({c:`var(--r${k+1})`,l:stl()[k]})))+segDetail(all);
+}
+function segDetail(all){
+  const sg=state.seg;
+  if(!sg)return '<p class="seg-hint">Click any number in the bars to see the stock names behind it.</p>';
+  const lo=state.mode==='low',a=all.filter(r=>r.grp===sg.s&&r.st===sg.k).sort((x,y)=>(x.gap??99)-(y.gap??99)||x.sym.localeCompare(y.sym));
+  if(!a.length){state.seg=null;return '<p class="seg-hint">Click any number in the bars to see the stock names behind it.</p>'}
+  return `<div class="seg-d"><div class="seg-h"><span><i style="background:${scol(sg.s)}"></i><b>${esc(sg.s)}</b> · ${stl()[sg.k]} · <b>${a.length}</b> ${a.length===1?'stock':'stocks'}</span><span class="row"><button type="button" class="btn" data-segcopy>Copy symbols</button><button type="button" class="btn" data-segclose>Close</button></span></div>`+
+    `<div class="seg-l">${a.map(r=>`<span class="sy2"><b>${esc(r.sym)}</b><span class="m">₹${fp(r.ltp)}</span><span class="m ${r.chg>0?'up':r.chg<0?'dn':''}">${sgn(r.chg)}</span><span class="m g">${r.gap==null?'–':r.gap.toFixed(2)+(lo?'% above':'% below')}</span></span>`).join('')}</div></div>`;
+}
+function colChart(bins,rows,keys,label){
+  const W=560,H=250,L=34,R=6,T=20,B=30,iw=W-L-R,ih=H-T-B,band=iw/bins.length,bw=Math.min(48,band*.66);
+  const data=bins.map(b=>{const m=rows.filter(b.f),c={};keys.forEach(k=>c[k]=m.filter(r=>r.grp===k).length);return {b,c,t:m.length}});
+  const nm=niceMax(Math.max(1,...data.map(d=>d.t))),base=T+ih;
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(label)}">`;
+  for(let v=0;v<=nm.max;v+=nm.step){const y=base-v/nm.max*ih;s+=`<line class="gl" x1="${L}" x2="${W-R}" y1="${y}" y2="${y}"/><text class="ax" x="${L-6}" y="${y+3.5}" text-anchor="end">${v}</text>`}
+  data.forEach((d,i)=>{
+    const x=L+band*i+(band-bw)/2;let cur=base;
+    keys.forEach(k=>{const c=d.c[k];if(!c)return;const h=c/nm.max*ih;s+=`<rect x="${x}" y="${cur-h+1}" width="${bw}" height="${Math.max(h-2,1)}" rx="2" style="fill:${scol(k)}"/>`;cur-=h});
+    if(d.t)s+=`<text class="ax2" x="${x+bw/2}" y="${cur-5}" text-anchor="middle">${d.t}</text>`;
+    s+=`<text class="ax" x="${L+band*i+band/2}" y="${base+17}" text-anchor="middle">${esc(d.b.l)}</text>`;
+    const tt=`<b>${esc(d.b.l)}</b> · ${d.t} stocks`+(keys.length>1?'<br>'+keys.map(k=>`${k}: ${d.c[k]}`).join('<br>'):'');
+    s+=`<rect x="${L+band*i}" y="${T}" width="${band}" height="${ih}" fill="transparent" ${tipA(tt)}/>`;
+  });
+  return s+'</svg>'+(keys.length>1?legend(keys.map(k=>({c:scol(k),l:k+' · '+(SINFO[k]?SINFO[k].name:'Other')}))):'');
+}
+function chartBreak(rows){
+  const a=rows.filter(r=>r.brk!=null).sort((x,y)=>y.brk-x.brk).slice(0,10);
+  const lo=state.mode==='low',sg=lo?'−':'+';
+  if(!a.length)return `<p class="empty">No stocks with a previous ${lo?'low':'high'} on file.</p>`;
+  const W=560,rh=27,H=a.length*rh+6,L=124,mx=Math.max(...a.map(r=>r.brk),0.01),bw=W-L-70;
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Top breaks past the previous extreme">`;
+  a.forEach((r,i)=>{
+    const y=i*rh+4,w=Math.max(3,r.brk/mx*bw);
+    s+=`<rect x="0" y="${y+6}" width="9" height="9" rx="2" style="fill:${scol(r.grp)}"/><text class="ax2" x="16" y="${y+15}">${esc(r.sym.slice(0,12))}</text>`+
+       `<rect x="${L}" y="${y+2}" width="${w}" height="18" rx="2" style="fill:${scol(r.grp)}"/><text class="ax2" x="${L+w+6}" y="${y+15}">${sg}${r.brk.toFixed(2)}%</text>`+
+       `<rect x="0" y="${y}" width="${W}" height="${rh-2}" fill="transparent" ${tipA(`<b>${esc(r.sym)}</b> · ${esc(r.grp)}<br>Previous ${lo?'low':'high'} ₹${fp(r.ph)}<br>New ${lo?'low':'high'} ₹${fp(r.nh)}<br>Break ${sg}${r.brk.toFixed(2)}%`)}/>`;
+  });
+  return s+'</svg>'+legend(seriesList(a).map(k=>({c:scol(k),l:k})));
+}
+
+/* window charts */
+function hbars(items,fmt,aria,L=150){
+  if(!items.length)return '<p class="empty">Nothing to show.</p>';
+  const rh=28,W=560,H=items.length*rh+4,bw=W-L-72,mx=Math.max(...items.map(i=>i.v),0.0001);
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(aria)}">`;
+  items.forEach((it,i)=>{
+    const y=i*rh+2,w=it.v>0?Math.max(it.v/mx*bw,3):0;
+    s+=`<g><rect x="0" y="${y+7}" width="9" height="9" rx="2" style="fill:${it.c}"/><text class="ax2" x="16" y="${y+16}">${esc(it.l.length>Math.floor((L-16)/6.6)?it.l.slice(0,Math.floor((L-16)/6.6)-1)+'…':it.l)}</text>`+
+      `<rect x="${L}" y="${y+3}" width="${w}" height="18" rx="2" style="fill:${it.c}"/><text class="ax2" x="${L+w+6}" y="${y+16}">${fmt(it.v)}</text>`+
+      `<rect x="0" y="${y}" width="${W}" height="${rh-2}" fill="transparent" ${tipA(it.tip)}/></g>`;
+  });
+  return s+'</svg>';
+}
+function niceTicks(min,max,n=5){
+  if(max<=min)max=min+1;
+  const raw=(max-min)/n,mag=Math.pow(10,Math.floor(Math.log10(raw))),f=raw/mag,step=(f<=1?1:f<=2?2:f<=5?5:10)*mag;
+  const lo=Math.floor(min/step+1e-9)*step,hi=Math.ceil(max/step-1e-9)*step,t=[];
+  for(let v=lo;v<=hi+step/2;v+=step)t.push(+v.toFixed(10));
+  return {lo,hi,t};
+}
+function xLabels(slots,cx,base){
+  return slots.map((d,i)=>`<text class="ax" x="${cx(i)}" y="${base+14}" text-anchor="middle">${d.slice(8)}</text>`+((i===0||d.slice(5,7)!==slots[i-1].slice(5,7))?`<text class="ax" x="${cx(i)}" y="${base+28}" text-anchor="middle">${MN[+d.slice(5,7)-1]}</text>`:'')).join('');
+}
+function chartDaily(W,g){
+  const slots=W.slots,V=560,H=250,L=34,R=6,T=18,B=40,iw=V-L-R,ih=H-T-B,band=iw/slots.length,bw=Math.min(26,band*.68);
+  const data=slots.map(d=>{const rows=(W.perDay[d]||[]).filter(r=>!g||r.grp===g),c={};rows.forEach(r=>c[r.grp]=(c[r.grp]||0)+1);return {d,n:rows.length,c,miss:!W.perDay[d]}});
+  const nm=niceTicks(0,Math.max(1,...data.map(x=>x.n)),4),base=T+ih,keys=seriesList(W.dates.flatMap(d=>W.perDay[d]).filter(r=>!g||r.grp===g));
+  const cx=i=>L+band*i+band/2;
+  let s=`<svg viewBox="0 0 ${V} ${H}" role="img" aria-label="Stocks per trading day">`;
+  nm.t.forEach(v=>{const y=base-v/nm.hi*ih;s+=`<line class="gl" x1="${L}" x2="${V-R}" y1="${y}" y2="${y}"/><text class="ax" x="${L-6}" y="${y+3.5}" text-anchor="end">${v}</text>`});
+  data.forEach((x,i)=>{
+    let cur=base;
+    keys.forEach(k=>{const c=x.c[k];if(!c)return;const h=c/nm.hi*ih;s+=`<rect x="${cx(i)-bw/2}" y="${cur-h+1}" width="${bw}" height="${Math.max(h-2,1)}" rx="2" style="fill:${scol(k)}"/>`;cur-=h});
+    if(x.n)s+=`<text class="ax2" x="${cx(i)}" y="${cur-5}" text-anchor="middle">${x.n}</text>`;
+    if(x.miss)s+=`<text class="ax" x="${cx(i)}" y="${base-5}" text-anchor="middle" style="fill:var(--bad)">–</text>`;
+    const tt=x.miss?`<b>${esc(dispLong(x.d))}</b><br>No data uploaded`:`<b>${esc(dispLong(x.d))}</b> · ${x.n} stocks`+keys.filter(k=>x.c[k]).map(k=>`<br>${esc(k)}: ${x.c[k]}`).join('');
+    s+=`<rect x="${L+band*i}" y="${T}" width="${band}" height="${ih+24}" fill="transparent" ${tipA(tt)}/>`;
+  });
+  return s+xLabels(slots,cx,base)+'</svg>'+legend(keys.map(k=>({c:scol(k),l:k})));
+}
+function chartBreadth(WH,WL,g){
+  if(!WH.dates.length||!WL.dates.length)return `<p class="empty">This chart needs both file types. Upload ${WL.dates.length?'52-week high':'52-week low'} files too to compare new highs with new lows.</p>`;
+  const hol=loadHol(),slots=slotList([...new Set([...WH.dates,...WL.dates])].sort(),hol);
+  const cnt=(W,d)=>W.perDay[d]?W.perDay[d].filter(r=>!g||r.grp===g).length:null;
+  const data=slots.map(d=>({d,h:cnt(WH,d),l:cnt(WL,d)}));
+  const V=560,H=260,L=34,R=6,T=22,B=40,iw=V-L-R,ih=H-T-B,band=iw/slots.length,bw=Math.min(24,band*.66),mid=T+ih/2;
+  const nm=niceTicks(0,Math.max(1,...data.flatMap(x=>[x.h||0,x.l||0])),2),half=ih/2,cx=i=>L+band*i+band/2;
+  let s=`<svg viewBox="0 0 ${V} ${H}" role="img" aria-label="New highs against new lows per day">`;
+  nm.t.forEach(v=>{if(v===0)return;[-1,1].forEach(sg=>{const y=mid-sg*v/nm.hi*half;s+=`<line class="gl" x1="${L}" x2="${V-R}" y1="${y}" y2="${y}"/><text class="ax" x="${L-6}" y="${y+3.5}" text-anchor="end">${v}</text>`})});
+  s+=`<line x1="${L}" x2="${V-R}" y1="${mid}" y2="${mid}" style="stroke:var(--line2)"/><text class="ax" x="${L-6}" y="${mid+3.5}" text-anchor="end">0</text>`;
+  data.forEach((x,i)=>{
+    const hh=(x.h||0)/nm.hi*half,ll=(x.l||0)/nm.hi*half;
+    if(x.h)s+=`<rect x="${cx(i)-bw/2}" y="${mid-hh}" width="${bw}" height="${Math.max(hh-1,1)}" rx="2" style="fill:var(--good)"/><text class="ax2" x="${cx(i)}" y="${mid-hh-4}" text-anchor="middle">${x.h}</text>`;
+    if(x.l)s+=`<rect x="${cx(i)-bw/2}" y="${mid+1}" width="${bw}" height="${Math.max(ll-1,1)}" rx="2" style="fill:var(--bad)"/><text class="ax2" x="${cx(i)}" y="${mid+ll+12}" text-anchor="middle">${x.l}</text>`;
+    const net=x.h!=null&&x.l!=null?x.h-x.l:null;
+    s+=`<rect x="${L+band*i}" y="${T-8}" width="${band}" height="${ih+16}" fill="transparent" ${tipA(`<b>${esc(dispLong(x.d))}</b><br>New highs: ${x.h==null?'no file':x.h}<br>New lows: ${x.l==null?'no file':x.l}`+(net==null?'':`<br>Net: ${net>0?'+':net<0?'−':''}${Math.abs(net)}`))}/>`;
+  });
+  return s+xLabels(slots,cx,T+ih)+'</svg>'+legend([{c:'var(--good)',l:'New 52W highs'},{c:'var(--bad)',l:'New 52W lows'}]);
+}
+function chartStrength(W,g){
+  const lo=W.mode==='low',slots=W.slots,V=560,H=250,L=38,R=22,T=20,B=40,iw=V-L-R,ih=H-T-B;
+  const data=slots.map(d=>{const rows=(W.perDay[d]||[]).filter(r=>!g||r.grp===g);return {d,n:rows.length,at:rows.filter(r=>r.st===0).length}}).map(x=>({...x,p:x.n?x.at/x.n*100:null}));
+  const have=data.filter(x=>x.p!=null);
+  if(!have.length)return '<p class="empty">Nothing to show.</p>';
+  const band=iw/slots.length,cx=i=>L+band*i+band/2,sy=v=>T+(1-v/100)*ih,base=T+ih;
+  let s=`<svg viewBox="0 0 ${V} ${H}" role="img" aria-label="Share of listings closing at the extreme per day">`;
+  [0,25,50,75,100].forEach(v=>{s+=`<line class="gl" x1="${L}" x2="${V-R}" y1="${sy(v)}" y2="${sy(v)}"/><text class="ax" x="${L-6}" y="${sy(v)+3.5}" text-anchor="end">${v}%</text>`});
+  const pts=data.map((x,i)=>x.p==null?null:[cx(i),sy(x.p),x]).filter(Boolean);
+  if(pts.length>1)s+=`<path d="M${pts[0][0]} ${base} L${pts.map(p=>`${p[0]} ${p[1]}`).join(' L')} L${pts[pts.length-1][0]} ${base} Z" style="fill:var(--accent-soft)"/><path d="M${pts.map(p=>`${p[0]} ${p[1]}`).join(' L')}" style="fill:none;stroke:var(--accent);stroke-width:2"/>`;
+  pts.forEach((p,i)=>{
+    s+=`<circle cx="${p[0]}" cy="${p[1]}" r="${i===pts.length-1?5.5:4}" style="fill:var(--accent);stroke:var(--panel);stroke-width:2"/>`;
+    if(pts.length<=10||i===pts.length-1)s+=`<text class="ax2" x="${p[0]}" y="${p[1]-10}" text-anchor="middle">${p[2].p.toFixed(0)}%</text>`;
+    s+=`<circle cx="${p[0]}" cy="${p[1]}" r="12" fill="transparent" ${tipA(`<b>${esc(dispLong(p[2].d))}</b><br>${p[2].at} of ${p[2].n} listings closed at the new ${lo?'low':'high'}<br>${p[2].p.toFixed(0)}%`)}/>`;
+  });
+  return s+xLabels(slots,cx,base)+'</svg>';
+}
+function chartRepeat(stocks){
+  const a=[...stocks].sort((x,y)=>y.days-x.days||y.li.localeCompare(x.li)||x.sym.localeCompare(y.sym)).slice(0,12);
+  if(!a.length||a[0].days<2)return '<p class="empty">No stock has been listed on more than one day yet.</p>';
+  return hbars(a.map(s=>({l:s.sym,v:s.days,c:scol(s.grp),tip:`<b>${esc(s.sym)}</b> · ${esc(s.grp)}<br>${s.days} days: ${esc(s.apps.map(x=>shortIso(x.iso)).join(', '))}`})),v=>v+'d','Days listed per stock',124)+legend(seriesList(a).map(k=>({c:scol(k),l:k})));
+}
+function chartMove(stocks,lo){
+  let a=stocks.filter(s=>s.move!=null).sort((x,y)=>y.move-x.move);
+  if(!a.length)return '<p class="empty">Needs a stock listed on at least two days.</p>';
+  if(a.length>14)a=[...a.slice(0,7),...a.slice(-7)];
+  const V=560,L=124,R=70,rh=27,H=a.length*rh+4,mn=Math.min(0,...a.map(s=>s.move)),mx=Math.max(0,...a.map(s=>s.move)),sc=(V-L-R)/((mx-mn)||1),x0=L+(-mn)*sc;
+  let s=`<svg viewBox="0 0 ${V} ${H}" role="img" aria-label="Move since first listed LTP">`;
+  s+=`<line x1="${x0}" x2="${x0}" y1="0" y2="${H}" style="stroke:var(--line2)"/>`;
+  a.forEach((st,i)=>{
+    const y=i*rh+2,w=Math.max(Math.abs(st.move)*sc,2),pos=st.move>=0,x=pos?x0:x0-w;
+    s+=`<rect x="0" y="${y+7}" width="9" height="9" rx="2" style="fill:${scol(st.grp)}"/><text class="ax2" x="16" y="${y+16}">${esc(st.sym.length>12?st.sym.slice(0,11)+'…':st.sym)}</text>`+
+      (Math.abs(st.move)<0.005?'':`<rect x="${x}" y="${y+3}" width="${w}" height="18" rx="2" style="fill:var(${pos?'--good':'--bad'})"/>`)+
+      `<text class="ax2" x="${pos?x+w+6:x-6}" y="${y+16}" text-anchor="${pos?'start':'end'}">${sgn(st.move)}</text>`+
+      `<rect x="0" y="${y}" width="${V}" height="${rh-2}" fill="transparent" ${tipA(`<b>${esc(st.sym)}</b> · ${esc(st.grp)}<br>First listed ${shortIso(st.fi)} at ₹${fp(st.fl)}<br>Latest listed ${shortIso(st.li)} at ₹${fp(st.ll)}<br>${sgn(st.move)} over ${st.days} listings`)}/>`;
+  });
+  return s+'</svg>';
+}
+function chartSeriesMix(stocks){
+  const g={};stocks.forEach(s=>(g[s.grp]||(g[s.grp]=[])).push(s));
+  const ks=Object.keys(g).sort((a,b)=>g[b].length-g[a].length||a.localeCompare(b));
+  return hbars(ks.map(k=>({l:k,v:g[k].length,c:scol(k),tip:`<b>${esc(k)}</b> · ${g[k].length} different stocks<br>${g[k].reduce((a,s)=>a+s.days,0)} listings in total`})),v=>v,'Different stocks per series',96);
+}
+function chartHeat(W,stocks){
+  const list=[...stocks].sort((a,b)=>b.days-a.days||b.li.localeCompare(a.li)||a.sym.localeCompare(b.sym)).slice(0,40);
+  if(!list.length)return '<p class="empty">Nothing to show.</p>';
+  const cw=26,rh=20,L=124,T=36,slots=W.slots,V=L+slots.length*cw+8,H=T+list.length*rh+6;
+  let s=`<svg viewBox="0 0 ${V} ${H}" style="width:${V}px" role="img" aria-label="Which stocks were listed on which days">`;
+  slots.forEach((d,i)=>{
+    const cx=L+i*cw+cw/2,miss=!W.perDay[d];
+    s+=`<text class="ax" x="${cx}" y="${T-18}" text-anchor="middle" ${miss?'style="fill:var(--bad)"':''}>${d.slice(8)}</text>`;
+    if(i===0||d.slice(5,7)!==slots[i-1].slice(5,7))s+=`<text class="ax" x="${cx}" y="${T-6}" text-anchor="middle">${MN[+d.slice(5,7)-1]}</text>`;
+  });
+  list.forEach((st,ri)=>{
+    const y=T+ri*rh,have=new Map(st.apps.map(a=>[a.iso,a]));
+    s+=`<text class="ax2" x="0" y="${y+14}">${esc(st.sym.length>12?st.sym.slice(0,11)+'…':st.sym)}</text><text class="ax" x="${L-8}" y="${y+14}" text-anchor="end">${st.days}d</text>`;
+    slots.forEach((d,i)=>{
+      const a=have.get(d),x=L+i*cw+1;
+      if(a)s+=`<rect x="${x}" y="${y+1}" width="${cw-3}" height="${rh-3}" rx="2" style="fill:${scol(st.grp)}" ${tipA(`<b>${esc(st.sym)}</b> · ${esc(dispLong(d))}<br>LTP ₹${fp(a.ltp)}<br>Day change ${sgn(a.chg)}<br>${a.gap==null?'':a.gap.toFixed(2)+'% from the extreme'}`)}/>`;
+      else s+=`<rect x="${x}" y="${y+1}" width="${cw-3}" height="${rh-3}" rx="2" style="fill:none;stroke:var(--line);${W.perDay[d]?'':'stroke-dasharray:3 2'}"/>`;
+    });
+  });
+  return s+'</svg>';
+}
+function cumInsights(W,stocks,g,WO){
+  const out=[],N=W.dates.length,last=W.last,lo=W.mode==='low',ex=lo?'low':'high';
+  const rowsBy=(WW,d)=>(WW.perDay[d]||[]).filter(r=>!g||r.grp===g);
+  if(!stocks.length)return [{t:'Window',x:'No stocks in this series across the loaded days.'}];
+  const counts=W.dates.map(d=>({d,n:rowsBy(W,d).length}));
+  const busy=[...counts].sort((a,b)=>b.n-a.n)[0],quiet=[...counts].sort((a,b)=>a.n-b.n)[0],rep=stocks.filter(s=>s.days>1);
+  out.push({t:'Coverage',x:`<em>${N}</em> trading days loaded, ${dispIso(W.dates[0])} to ${dispIso(last)}. <em>${stocks.length}</em> different stocks made a new 52-week ${ex} and <em>${rep.length}</em> of them did it on more than one day.`});
+  out.push({t:'Activity',x:`Busiest day <em>${shortIso(busy.d)} (${busy.n})</em>, quietest <em>${shortIso(quiet.d)} (${quiet.n})</em>, average <em>${avg(counts.map(c=>c.n)).toFixed(1)}</em> a day.`});
+  const thr=Math.max(2,Math.ceil(N/2)),pers=stocks.filter(s=>s.days>=thr).sort((a,b)=>b.days-a.days||a.sym.localeCompare(b.sym));
+  if(pers.length)out.push({t:'Persistent',x:`<em>${pers.length}</em> ${pers.length===1?'stock was':'stocks were'} listed on ${thr} or more days: <em>${esc(names(pers,5,s=>`${s.sym} (${s.days}d)`))}</em>. ${lo?'Repeated new lows point to sustained selling pressure.':'Repeated new highs point to a sustained uptrend.'}`});
+  else{const top=[...stocks].sort((a,b)=>b.days-a.days)[0];out.push({t:'Persistent',x:`No stock has been listed on ${thr} or more days yet. Most repeated: <em>${esc(top.sym)} (${top.days}d)</em>.`})}
+  const pc=data=>data.filter(x=>x.n).map(x=>({d:x.d,p:x.at/x.n*100}));
+  const sd=W.dates.map(d=>{const r=rowsBy(W,d);return {d,n:r.length,at:r.filter(x=>x.st===0).length}}),sp=pc(sd);
+  if(sp.length){const hi=[...sp].sort((a,b)=>b.p-a.p)[0],lw=[...sp].sort((a,b)=>a.p-b.p)[0],tot=sd.reduce((a,x)=>a+x.at,0),all=sd.reduce((a,x)=>a+x.n,0);
+    out.push({t:'Strength',x:`<em>${(tot/all*100).toFixed(0)}%</em> of all listings closed right at the new ${ex}. Strongest day <em>${shortIso(hi.d)} (${hi.p.toFixed(0)}%)</em>, weakest <em>${shortIso(lw.d)} (${lw.p.toFixed(0)}%)</em>. ${lo?'A high share at the low means sellers held control into the close.':'A high share at the high means buyers held control into the close.'}`})}
+  const gone=stocks.filter(s=>s.days===1&&!s.active);
+  if(gone.length)out.push({t:'One-day names',x:`<em>${gone.length}</em> appeared once and have not returned: <em>${esc(names(gone,5))}</em>.`});
+  const mv=stocks.filter(s=>s.move!=null).sort((a,b)=>b.move-a.move);
+  if(mv.length){const lowest=mv[mv.length-1];
+    out.push({t:'Since first listed',x:(lo?'Strongest rebound ':'Best ')+`<em>${esc(names(mv.slice(0,3),3,s=>`${s.sym} ${sgn(s.move)}`))}</em>. `+(lowest.move<0?(lo?'Further declines ':'Weakest ')+`<em>${esc(names(mv.slice(-3).reverse(),3,s=>`${s.sym} ${sgn(s.move)}`))}</em>.`:(lo?'None has fallen below its first listed price.':'None has closed below its first listed price.'))+' Measured between the first and latest day each stock was listed.'})}
+  const rex=stocks.filter(s=>s.re>0);
+  if(rex.length)out.push({t:'Re-entries',x:`<em>${rex.length}</em> dropped off the list and came back: <em>${esc(names(rex,5))}</em>.`});
+  if(!g&&N>=4){
+    const h=Math.floor(N/2),share=ds=>{const c={};let t=0;ds.forEach(d=>W.perDay[d].forEach(r=>{c[r.grp]=(c[r.grp]||0)+1;t++}));return {c,t}};
+    const A=share(W.dates.slice(0,h)),B=share(W.dates.slice(h)),ks=[...new Set([...Object.keys(A.c),...Object.keys(B.c)])];
+    const dl=ks.map(s=>({s,a:(A.c[s]||0)/(A.t||1)*100,b:(B.c[s]||0)/(B.t||1)*100})).map(x=>({...x,d:x.b-x.a})).sort((x,y)=>y.d-x.d),up=dl[0],dn=dl[dl.length-1];
+    if(up.d>=10||dn.d<=-10)out.push({t:'Series shift',x:`<em>${esc(up.s)}</em> went from ${up.a.toFixed(0)}% of listings in the first half of the window to ${up.b.toFixed(0)}% in the second half`+(dn.d<=-10?`, while <em>${esc(dn.s)}</em> fell from ${dn.a.toFixed(0)}% to ${dn.b.toFixed(0)}%`:'')+'.'});
+    else out.push({t:'Series shift',x:'The series mix has been steady. No series moved more than 10 points of share between the two halves of the window.'});
+  }
+  const WH=lo?WO:W,WL=lo?W:WO;
+  if(WO.dates.length){
+    const common=WH.dates.filter(d=>WL.perDay[d]);
+    if(common.length){
+      let hd=0,tH=0,tL=0;common.forEach(d=>{const h=rowsBy(WH,d).length,l=rowsBy(WL,d).length;tH+=h;tL+=l;if(h>l)hd++});
+      out.push({t:'Breadth',x:`On the <em>${common.length}</em> days with both files, new highs outnumbered new lows on <em>${hd}</em>. Total <em>${tH}</em> highs against <em>${tL}</em> lows, a net of <em>${tH-tL>0?'+':tH-tL<0?'−':''}${Math.abs(tH-tL)}</em>.`});
+    }
+    const ok=new Set(WO.stocks.filter(s=>!g||s.grp===g).map(s=>s.key)),both=stocks.filter(s=>ok.has(s.key));
+    if(both.length)out.push({t:'Both lists',x:`<em>${both.length}</em> ${both.length===1?'stock appears':'stocks appear'} on both the 52-week high and low lists inside the window: <em>${esc(names(both,5))}</em>. A swing that wide is worth checking against the source data.`});
+  }else out.push({t:'Breadth',x:`Upload the ${typeLabel(lo?'high':'low')} files for the same days to compare new highs with new lows.`});
+  if(N>=2){
+    const prev=W.dates[N-2],ps=new Set(rowsBy(W,prev).map(keyOf)),cs=rowsBy(W,last),nw=cs.filter(r=>!ps.has(keyOf(r))),gn=ps.size-cs.filter(r=>ps.has(keyOf(r))).length;
+    out.push({t:'Latest day',x:`${dispIso(last)}: <em>${cs.length}</em> listed, <em>${nw.length}</em> new since ${shortIso(prev)}`+(nw.length?` (${esc(names(nw,4))})`:'')+`, <em>${gn}</em> dropped off.`});
+  }
+  return out;
+}
+
+function renderKpis(rows){
+  const n=rows.length,at=rows.filter(r=>r.st===0).length,w3=rows.filter(r=>r.st<=2).length;
+  const up=rows.filter(r=>r.chg>0).length,dn=rows.filter(r=>r.chg<0).length;
+  const mc=med(rows.map(r=>r.chg)),mb=med(rows.filter(r=>r.brk!=null).map(r=>r.brk)),ag=avg(rows.filter(r=>r.gap!=null).map(r=>r.gap));
+  const sc=state.tab==='ALL'?'all series':state.tab+' only',lo=state.mode==='low',W=lo?'low':'high';
+  const k=[
+    ['Stocks at 52W '+W,n,'acc',sc],
+    ['Trading at the '+W,at,'',n?(at/n*100).toFixed(0)+'% of stocks':'–'],
+    ['Within 3% of '+W,w3,'',n?(w3/n*100).toFixed(0)+'% of stocks':'–'],
+    ['Advancers / decliners',`${up} / ${dn}`,'',`${n-up-dn} flat`],
+    ['Median day change',sgn(mc),'',lo?`average rise above low ${f1(ag)}`:`average gap to high ${f1(ag)}`],
+    ['Median break of old '+W,mb==null?'–':(lo?'−':'+')+mb.toFixed(2)+'%','','new '+W+' vs previous '+W]
+  ];
+  $('#kpis').innerHTML=k.map(x=>`<div class="kpi"><div class="l">${x[0]}</div><div class="v ${x[2]}">${x[1]}</div><div class="s">${x[3]}</div></div>`).join('');
+}
+function renderTabs(){
+  const all=state.cur.rows,ss=seriesList(all);
+  const items=[{k:'ALL',l:'ALL',n:all.length,nm:'All series',c:'var(--accent)'},...ss.map(s=>({k:s,l:s,n:all.filter(r=>r.grp===s).length,nm:SINFO[s]?SINFO[s].name:'Other series',c:scol(s)}))];
+  $('#tabs').innerHTML=items.map(i=>`<button class="tab" role="tab" type="button" data-k="${esc(i.k)}" aria-selected="${state.tab===i.k}"><span class="dot" style="background:${i.c}"></span><span class="code">${esc(i.l)}</span><span class="n">${i.n}</span><span class="nm">${esc(i.nm)}</span></button>`).join('');
+}
+function renderIns(rows){
+  const all=state.cur.rows,k=state.tab,info=SINFO[k]||{name:k==='ALL'?'All series combined':'Other series',desc:k==='ALL'?'Every series in the file, merged. Pick a tab to see how EQ, FUND, SM, BE and ST differ.':'A series code not covered by the standard list.'};
+  const gaps=rows.filter(r=>r.gap!=null).map(r=>r.gap);
+  const lo=state.mode==='low';
+  const mini=[['Stocks',rows.length],['Trading at the '+(lo?'low':'high'),rows.filter(r=>r.st===0).length],[lo?'Average rise above low':'Average gap to high',f1(avg(gaps))],['Median price','₹'+fp(med(rows.map(r=>r.ltp)))],['Highest LTP',rows.length?'₹'+fp(Math.max(...rows.map(r=>r.ltp))):'–'],['Lowest LTP',rows.length?'₹'+fp(Math.min(...rows.map(r=>r.ltp))):'–']];
+  $('#ins').innerHTML=`<div class="ins-l"><div class="code" style="color:${k==='ALL'?'var(--accent)':scol(k)}">${esc(k)}</div><div class="nm">${esc(info.name)}</div><p>${esc(info.desc)}</p><div class="mini">${mini.map(m=>`<div><span>${m[0]}</span><span>${m[1]}</span></div>`).join('')}</div></div>`+
+    `<div class="ins-r"><ul>${insights(rows,k,all).map(i=>`<li><span class="t">${esc(i.t)}</span><span class="x">${i.x}</span></li>`).join('')}</ul></div>`;
+}
+function renderCharts(rows){
+  const all=state.cur.rows,keys=state.tab==='ALL'?seriesList(all):[state.tab];
+  $('#c1').innerHTML=chartStatus(all);
+  const cb=(state.mode==='low'?[['≤−4.9%',r=>r.chg<=-4.9],['−4.9 to −3%',r=>r.chg>-4.9&&r.chg<=-3],['−3 to −2%',r=>r.chg>-3&&r.chg<=-2],['−2 to −1%',r=>r.chg>-2&&r.chg<=-1],['−1 to 0%',r=>r.chg>-1&&r.chg<0],['0 or up',r=>r.chg>=0]]:[['<0',r=>r.chg<0],['0–1%',r=>r.chg>=0&&r.chg<1],['1–2%',r=>r.chg>=1&&r.chg<2],['2–3%',r=>r.chg>=2&&r.chg<3],['3–5%',r=>r.chg>=3&&r.chg<5],['5–10%',r=>r.chg>=5&&r.chg<10],['10%+',r=>r.chg>=10]]).map(x=>({l:x[0],f:x[1]}));
+  $('#c2').innerHTML=colChart(cb,rows,keys,'Stocks by day change bucket');
+  $('#c3').innerHTML=chartBreak(rows);
+  const db=[['0–3d',r=>r.days!=null&&r.days<=3],['4–7d',r=>r.days!=null&&r.days>3&&r.days<=7],['8–30d',r=>r.days!=null&&r.days>7&&r.days<=30],['31–90d',r=>r.days!=null&&r.days>30&&r.days<=90],['91–180d',r=>r.days!=null&&r.days>90&&r.days<=180],['180d+',r=>r.days!=null&&r.days>180],['None',r=>r.days==null]].map(x=>({l:x[0],f:x[1]}));
+  $('#c4').innerHTML=colChart(db,rows,keys,'Stocks by age of previous high');
+}
+
+/* ---------- renderers ---------- */
+function renderChrome(){
+  const W=state.W,c=state.cur,lo=state.mode==='low',t=todayIso(),hol=loadHol();
+  const HH=loadHist('high'),HL=loadHist('low'),h=lo?HL:HH,oh=lo?HH:HL;
+  document.documentElement.dataset.mode=state.mode;
+  $('#h1').textContent=lo?'52W Low Monitor':'52W High Monitor';
+  $('#sub0').textContent=lo?'NSE stocks setting new 52-week lows, by series':'NSE stocks setting new 52-week highs, by series';
+  $('#t1').textContent=lo?'Distance above 52W low':'Distance from 52W high';
+  $('#s1').textContent=lo?'LTP vs new low. Click a number to list the stocks.':'LTP vs new high. Click a number to list the stocks.';
+  $('#t3').textContent=lo?'Deepest breakdowns':'Strongest breakouts';
+  $('#s3').textContent=lo?'New low below previous low, top 10':'New high above previous high, top 10';
+  $('#mHigh').setAttribute('aria-pressed',String(!lo));$('#mLow').setAttribute('aria-pressed',String(lo));
+  $('#vDay').setAttribute('aria-pressed',String(state.view==='day'));$('#vCum').setAttribute('aria-pressed',String(state.view==='cum'));
+  $('#dayView').hidden=state.view!=='day';$('#cumView').hidden=state.view!=='cum';
+  $('#asofChip').innerHTML=`${lo?'LOWS':'HIGHS'} AS OF <b>${dispIso(c.iso)}</b>${c.sample?' · SAMPLE':''}`;
+  // calendar
+  const {y,m}=state.cal,first=new Date(Date.UTC(y,m,1)),pad=(first.getUTCDay()+6)%7,dim=new Date(Date.UTC(y,m+1,0)).getUTCDate();
+  const full=W.dates.length>=CAP,oldest=W.dates[0],U=unionSlots(),have=new Set(U.dates),miss=new Set(U.slots.filter(d=>!have.has(d)));
+  $('#calTitle').textContent=`${MFULL[m]} ${y}`;
+  let html=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(d=>`<div class="dow">${d}</div>`).join('');
+  for(let i=0;i<pad;i++)html+='<div class="day pad" aria-hidden="true"></div>';
+  for(let d=1;d<=dim;d++){
+    const iso=`${y}-${p2(m+1)}-${p2(d)}`,w=dow(iso),we=w===0||w===6,has=!!h[iso],oth=!!oh[iso];
+    const off=iso>t||(full&&!has&&iso<oldest);
+    const cls=['day',we?'we':'',has?'has':'',oth?'oth':'',hol.has(iso)?'hol':'',miss.has(iso)&&!hol.has(iso)?'miss':'',iso===state.sel?'sel':'',off?'off':'',iso===t?'today':''].filter(Boolean).join(' ');
+    const lab=has?h[iso].length:hol.has(iso)?'hol':oth?'–':miss.has(iso)?'no data':'';
+    html+=`<button type="button" class="${cls}" data-d="${iso}" ${off?'disabled':''} aria-pressed="${iso===state.sel}" title="${esc(dispLong(iso))} · High ${HH[iso]?HH[iso].length:'none'} · Low ${HL[iso]?HL[iso].length:'none'}" aria-label="${esc(dispLong(iso))}, high ${HH[iso]?HH[iso].length+' stocks':'no data'}, low ${HL[iso]?HL[iso].length+' stocks':'no data'}"><span>${d}</span><span class="c">${lab}</span></button>`;
+  }
+  $('#cal').innerHTML=html;
+  const sel=state.sel,hs=!!h[sel],any=!!(HH[sel]||HL[sel]);
+  $('#selTxt').textContent=dispLong(sel);
+  $('#selSub').textContent=hol.has(sel)?'Marked as a market holiday.':`High: ${HH[sel]?HH[sel].length+' stocks saved':'not uploaded'} · Low: ${HL[sel]?HL[sel].length+' stocks saved':'not uploaded'}`;
+  $('#delBtn').disabled=!hs;$('#delBtn').textContent=`Delete ${lo?'low':'high'} data`;
+  $('#holBtn').textContent=hol.has(sel)?'Unmark holiday':'Mark as holiday';$('#holBtn').disabled=any;
+  $('#nextBtn').disabled=nextTD(sel)>t;
+  // slot tapes
+  const tape=(mm,Wm)=>{const n=Wm.dates.length,act=mm===state.mode;return `<div class="t"><span>${mm==='low'?'52W low':'52W high'} window${act?' (viewing)':''}</span><span>${n?`<b>${n} / ${CAP}</b> days · ${shortIso(Wm.dates[0])} to ${shortIso(Wm.last)}${n>=CAP?` · next new day drops ${shortIso(Wm.dates[0])}`:''}`:'<b>0 / 20</b> days loaded'}</span></div><div class="slots ${act?'a':'o'}" aria-hidden="true">${Array.from({length:CAP},(_,i)=>`<i class="${i<n?'f':''}" ${i<n?tipA(dispLong(Wm.dates[i])):''}></i>`).join('')}</div>`};
+  $('#slotbox').innerHTML=tape('high',state.WB.high)+'<div style="height:10px"></div>'+tape('low',state.WB.low);
+}
+function renderTop(){
+  const c=state.cur,lo=state.mode==='low';
+  const t=[...c.rows].filter(r=>!r.fund).sort((a,b)=>lo?a.chg-b.chg:b.chg-a.chg).slice(0,14);
+  $('#tape').innerHTML=`<span class="lbl">${lo?'BIGGEST DROPS':'TOP MOVERS'}</span>`+t.map(r=>`<span><b>${esc(r.sym)}</b><span class="${r.chg>=0?'up':'dn'}">${sgn(r.chg)}</span></span>`).join('');
+}
+function renderMon(){
+  const c=state.cur,W=state.W,wide=t=>`<p class="empty" style="grid-column:1/-1">${t}</p>`;
+  if(c.sample||!W.sets[c.iso]){$('#monSub').textContent='Needs saved days';$('#mon').innerHTML=wide('The sample is not saved. Upload at least two trading days to see new entrants, drop-offs and streaks.');return}
+  const di=W.dates.indexOf(c.iso);
+  if(di<1){$('#monSub').textContent='Earliest saved day';$('#mon').innerHTML=wide('This is the earliest saved day, so there is nothing before it to compare with. Open a later day, or upload an earlier one.');return}
+  const prev=W.dates[di-1],ps=W.sets[prev],cs=W.sets[c.iso];
+  const newRows=c.rows.filter(r=>!ps.has(keyOf(r))),exits=W.perDay[prev].filter(r=>!cs.has(keyOf(r)));
+  const gap=W.sidx[c.iso]-W.sidx[prev]>1;
+  $('#monSub').textContent=`Compared with ${dispIso(prev)}${gap?' (days in between have no data)':''}`;
+  const sy=r=>`<span class="sy"><i style="background:${scol(r.grp)}"></i>${esc(r.sym)}</span>`;
+  const top=c.rows.map(r=>({r,s:streakOf(W,keyOf(r),c.iso)})).filter(x=>x.s>=2).sort((a,b)=>b.s-a.s).slice(0,12);
+  const colm=(t,n,body)=>`<div><h3>${t} <b>${n}</b></h3>${body}</div>`;
+  $('#mon').innerHTML=
+    colm('New on the list',newRows.length,newRows.length?`<div class="pills">${newRows.map(sy).join('')}</div>`:'<p class="empty">No new entrants.</p>')+
+    colm('Dropped off',exits.length,exits.length?`<div class="pills">${exits.map(sy).join('')}</div>`:'<p class="empty">Nobody dropped off.</p>')+
+    colm('Longest streaks',top.length,top.length?`<div class="pills">${top.map(x=>`<span class="sy"><i style="background:${scol(x.r.grp)}"></i>${esc(x.r.sym)} · ${x.s}d</span>`).join('')}</div>`:'<p class="empty">No stock has been listed on two trading days in a row.</p>');
+}
+const colsFor=()=>{const lo=state.mode==='low',W=lo?'low':'high';return [['sym','Symbol'],['grp','Series'],['ltp','LTP'],['chg','Change %'],['nh','New 52W '+W],['ph','Prev '+W],['days','Prev '+W+' date'],['brk',lo?'Below prev':'Above prev'],['gap',lo?'Above low':'Below high'],['st','Status'],['streak','Days in a row']]};
+function renderTable(rows){
+  const c=state.cur,W=state.W,q=state.q.trim().toUpperCase(),stf=state.stf,saved=!c.sample&&W.sets[c.iso],lo=state.mode==='low';
+  let a=rows.filter(r=>(!q||r.sym.includes(q))&&(stf===''||r.st===+stf));
+  const sk=state.sort.k,d=state.sort.d,st=r=>saved?streakOf(W,keyOf(r),c.iso):null;
+  const val=r=>sk==='streak'?st(r):r[sk];
+  a=[...a].sort((x,y)=>{const u=val(x),v=val(y);if(u==null&&v==null)return 0;if(u==null)return 1;if(v==null)return -1;return (typeof u==='string'?u.localeCompare(v):u-v)*d});
+  const COLS=colsFor();
+  $('#thr').innerHTML=COLS.map(cc=>`<th ${sk===cc[0]?`aria-sort="${d>0?'ascending':'descending'}"`:''}><button type="button" data-s="${cc[0]}">${cc[1]}${sk===cc[0]?(d>0?' ▲':' ▼'):''}</button></th>`).join('');
+  $('#tblSub').textContent=`${a.length} of ${rows.length} stocks`;
+  const di=saved?W.dates.indexOf(c.iso):-1,ps=di>0?W.sets[W.dates[di-1]]:null;
+  $('#tbody').innerHTML=a.length?a.map(r=>`<tr><td class="sym">${esc(r.sym)}${ps&&!ps.has(keyOf(r))?'<span class="tag new">NEW</span>':''}</td>`+
+    `<td title="NSE series ${esc(r.ser)}"><span class="sd" style="background:${scol(r.grp)}"></span>${esc(r.grp)}</td>`+
+    `<td class="m">${fp(r.ltp)}</td><td class="m ${r.chg>0?'up':r.chg<0?'dn':''}">${sgn(r.chg)}</td><td class="m">${fp(r.nh)}</td><td class="m">${r.ph>0?fp(r.ph):'–'}</td>`+
+    `<td class="m">${r.days==null?'–':esc(r.phdS)+' · '+r.days+'d'}</td><td class="m">${r.brk==null?'–':(lo?'−':'+')+r.brk.toFixed(2)+'%'}</td><td class="m">${r.gap==null?'–':r.gap.toFixed(2)+'%'}</td>`+
+    `<td><span class="pill p${r.st}">${stl()[r.st]}</span></td><td class="m">${saved?st(r):'–'}</td></tr>`).join('')
+    :`<tr><td colspan="${COLS.length}" style="text-align:center;color:var(--mut);padding:22px">No stocks match this filter.</td></tr>`;
+}
+function renderDay(){
+  const rows=visible();
+  renderTop();renderKpis(rows);renderTabs();renderIns(rows);renderCharts(rows);renderMon();renderTable(rows);
+}
+const CCOLS=[['sym','Symbol'],['grp','Series'],['days','Days listed'],['fi','First listed'],['li','Last listed'],['fl','First LTP'],['ll','Latest LTP'],['move','Move since first'],['avgChg','Avg day change'],['ext','Days at extreme'],['re','Re-entries'],['active','Status']];
+function renderCum(){
+  const W=state.W,WO=state.WB[state.mode==='low'?'high':'low'],N=W.dates.length,lo=state.mode==='low';
+  if(N<2){
+    $('#cumEmpty').hidden=false;$('#cumBody').hidden=true;
+    $('#cumEmptyTxt').textContent=N===0?`No ${typeLabel(state.mode)} days saved yet. Pick a trading day in the calendar and upload its CSV. Once two or more days are saved, the 20-day analysis appears here.`:`Only ${N} ${typeLabel(state.mode)} day is saved. Upload at least one more trading day and the analysis appears here.`;
+    return;
+  }
+  $('#cumEmpty').hidden=true;$('#cumBody').hidden=false;
+  const all=W.stocks,g=state.ctab==='ALL'?'':state.ctab,stocks=g?all.filter(s=>s.grp===g):all;
+  const rep=stocks.filter(s=>s.days>1),act=stocks.filter(s=>s.active);
+  const sd=W.dates.map(d=>{const r=W.perDay[d].filter(x=>!g||x.grp===g);return {n:r.length,at:r.filter(x=>x.st===0).length}}),per=sd.map(x=>x.n),tot=sd.reduce((a,x)=>a+x.n,0),ta=sd.reduce((a,x)=>a+x.at,0);
+  const k=[['Days loaded',`${N} / ${CAP}`,'acc',`${shortIso(W.dates[0])} to ${shortIso(W.last)}`+(W.slots.length>N?`, ${W.slots.length-N} weekday${W.slots.length-N>1?'s':''} without data`:'')],
+    ['Different stocks',stocks.length,'',g||'all series'],['Repeat listers',rep.length,'',stocks.length?`${(rep.length/stocks.length*100).toFixed(0)}% listed on 2+ days`:'–'],
+    ['Average per day',avg(per).toFixed(1),'',`peak ${Math.max(...per)}, low ${Math.min(...per)}`],
+    ['Still listed',act.length,'',`on ${shortIso(W.last)}`],['Closing at the '+(lo?'low':'high'),tot?(ta/tot*100).toFixed(0)+'%':'–','','share of all listings at the extreme']];
+  $('#ckpis').innerHTML=k.map(x=>`<div class="kpi"><div class="l">${esc(x[0])}</div><div class="v ${x[2]}">${x[1]}</div><div class="s">${esc(x[3])}</div></div>`).join('');
+  const gc={};all.forEach(s=>gc[s.grp]=(gc[s.grp]||0)+1);
+  const keys=[...SERIES_ORDER.filter(x=>gc[x]),...Object.keys(gc).filter(x=>!SERIES_ORDER.includes(x)).sort()];
+  $('#ctabs').innerHTML=[{k:'ALL',n:all.length,c:'var(--accent)'},...keys.map(x=>({k:x,n:gc[x],c:scol(x)}))].map(i=>`<button class="tab" role="tab" type="button" data-k="${esc(i.k)}" aria-selected="${state.ctab===i.k}"><span class="dot" style="background:${i.c}"></span><span class="code">${i.k==='ALL'?'ALL':esc(i.k)}</span><span class="n">${i.n}</span><span class="nm">${i.k==='ALL'?'All series':esc(SINFO[i.k]?SINFO[i.k].name:'Other series')}</span></button>`).join('');
+  const kk=state.ctab;
+  $('#cins').innerHTML=`<div class="ins-l"><div class="code" style="color:${kk==='ALL'?'var(--accent)':scol(kk)}">${esc(kk)}</div><div class="nm">${N}-day window · ${lo?'52W lows':'52W highs'}</div></div><div class="ins-r"><ul>${cumInsights(W,stocks,g,WO).map(i=>`<li><span class="t">${esc(i.t)}</span><span class="x">${i.x}</span></li>`).join('')}</ul></div>`;
+  $('#dt3').textContent=lo?'Closing at the new low':'Closing at the new high';
+  $('#d1').innerHTML=chartDaily(W,g);$('#d2').innerHTML=chartBreadth(state.WB.high,state.WB.low,g);$('#d3').innerHTML=chartStrength(W,g);
+  $('#d4').innerHTML=chartRepeat(stocks);$('#d5').innerHTML=chartMove(stocks,lo);$('#d6').innerHTML=chartSeriesMix(all);
+  $('#heatSub').textContent=stocks.length>40?`Top 40 of ${stocks.length} stocks, most days listed first`:`${stocks.length} stocks, most days listed first. Dashed columns have no data.`;
+  $('#heat').innerHTML=chartHeat(W,stocks);
+  renderCumTable(stocks);
+}
+function renderCumTable(stocks){
+  const q=state.cq.trim().toUpperCase(),f=state.cstf;
+  let a=stocks.filter(s=>(!q||s.sym.includes(q))&&(f===''||(f==='a'&&s.active)||(f==='d'&&!s.active)||(f==='r'&&s.days>1)));
+  const sk=state.csort.k,d=state.csort.d;
+  a=[...a].sort((x,y)=>{let u=x[sk],v=y[sk];if(typeof u==='boolean'){u=+u;v=+v}if(u==null&&v==null)return 0;if(u==null)return 1;if(v==null)return -1;return (typeof u==='string'?u.localeCompare(v):u-v)*d});
+  $('#cthr').innerHTML=CCOLS.map(c=>`<th ${sk===c[0]?`aria-sort="${d>0?'ascending':'descending'}"`:''}><button type="button" data-s="${c[0]}">${c[1]}${sk===c[0]?(d>0?' ▲':' ▼'):''}</button></th>`).join('');
+  $('#ctblSub').textContent=`${a.length} of ${stocks.length} stocks`;
+  $('#ctbody').innerHTML=a.length?a.map(s=>`<tr><td class="sym">${esc(s.sym)}</td><td title="NSE series ${esc(s.ser)}"><span class="sd" style="background:${scol(s.grp)}"></span>${esc(s.grp)}</td>`+
+    `<td class="m">${s.days}</td><td class="m">${shortIso(s.fi)}</td><td class="m">${shortIso(s.li)}</td><td class="m">${fp(s.fl)}</td><td class="m">${fp(s.ll)}</td>`+
+    `<td class="m ${s.move>0?'up':s.move<0?'dn':''}">${sgn(s.move)}</td><td class="m ${s.avgChg>0?'up':s.avgChg<0?'dn':''}">${sgn(s.avgChg)}</td><td class="m">${s.ext}</td><td class="m">${s.re||'–'}</td>`+
+    `<td><span class="pill ${s.active?'pa':'pd'}">${s.active?'LISTED':'DROPPED'}</span></td></tr>`).join('')
+    :`<tr><td colspan="${CCOLS.length}" style="text-align:center;color:var(--mut);padding:22px">No stocks match this filter.</td></tr>`;
+}
+function renderAll(){
+  state.WB={high:buildWindow('high'),low:buildWindow('low')};state.W=state.WB[state.mode];
+  renderChrome();renderBulk();
+  if(state.view==='day')renderDay();else renderCum();
+  const lo=state.mode==='low';
+  $('#foot').textContent=(lo?'Status buckets use LTP against the new 52W low, so "over 3% up" means the stock has bounced off its low. "Below prev" is how far the new low sits under the previous low. ':'Status buckets use LTP against the new 52W high. "Above prev" is new high over previous high. ')+'FUND groups ETFs and liquid funds that trade under series EQ, identified by symbol name (a rule of thumb). Price bands are inferred from the size of the day move. The window keeps the latest 20 saved trading days for each file type; weekends and marked holidays are not counted as missing. Move since first listed compares the first and latest day a stock was on the list. Prices in rupees.';
+}
+
+/* ---------- events ---------- */
+
+$('#c1').addEventListener('click',e=>{
+  if(e.target.closest('[data-segclose]')){state.seg=null;renderCharts(visible());return}
+  if(e.target.closest('[data-segcopy]')&&state.seg){
+    const sg=state.seg,t=state.cur.rows.filter(r=>r.grp===sg.s&&r.st===sg.k).map(r=>r.sym).join(', ');
+    navigator.clipboard.writeText(t).then(()=>setMsg(`Copied ${t.split(', ').length} symbols.`)).catch(()=>setMsg('Your browser blocked copy. Select the names in the list instead.'));return}
+  const g=e.target.closest('[data-seg]');if(!g)return;
+  const [se,k]=g.dataset.seg.split('|'),on=state.seg&&state.seg.s===se&&state.seg.k===+k;
+  state.seg=on?null:{s:se,k:+k};renderCharts(visible());
+});
+$('#c1').addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.closest&&e.target.closest('[data-seg]')){e.preventDefault();e.target.closest('[data-seg]').dispatchEvent(new MouseEvent('click',{bubbles:true}))}});
+$('#mHigh').addEventListener('click',()=>switchMode('high'));
+$('#mLow').addEventListener('click',()=>switchMode('low'));
+$('#vDay').addEventListener('click',()=>{state.view='day';renderAll()});
+$('#vCum').addEventListener('click',()=>{state.view='cum';renderAll()});
+$('#tabs').addEventListener('click',e=>{const b=e.target.closest('[data-k]');if(!b)return;state.tab=b.dataset.k;renderAll()});
+$('#ctabs').addEventListener('click',e=>{const b=e.target.closest('[data-k]');if(!b)return;state.ctab=b.dataset.k;renderAll()});
+$('#thr').addEventListener('click',e=>{const b=e.target.closest('[data-s]');if(!b)return;const k=b.dataset.s;state.sort=state.sort.k===k?{k,d:-state.sort.d}:{k,d:(k==='sym'||k==='grp')?1:-1};renderTable(visible())});
+$('#cthr').addEventListener('click',e=>{const b=e.target.closest('[data-s]');if(!b)return;const k=b.dataset.s;state.csort=state.csort.k===k?{k,d:-state.csort.d}:{k,d:(k==='sym'||k==='grp')?1:-1};renderCum()});
+$('#q').addEventListener('input',e=>{state.q=e.target.value;renderTable(visible())});
+$('#stf').addEventListener('change',e=>{state.stf=e.target.value;renderTable(visible())});
+$('#cq').addEventListener('input',e=>{state.cq=e.target.value;renderCum()});
+$('#cstf').addEventListener('change',e=>{state.cstf=e.target.value;renderCum()});
+$('#calPrev').addEventListener('click',()=>{const c=state.cal;state.cal=c.m===0?{y:c.y-1,m:11}:{y:c.y,m:c.m-1};renderChrome()});
+$('#calNext').addEventListener('click',()=>{const c=state.cal;state.cal=c.m===11?{y:c.y+1,m:0}:{y:c.y,m:c.m+1};renderChrome()});
+$('#cal').addEventListener('click',e=>{const b=e.target.closest('[data-d]');if(b&&!b.disabled)selectDay(b.dataset.d)});
+$('#cal').addEventListener('dragover',e=>{const b=e.target.closest('[data-d]');if(b&&!b.disabled){e.preventDefault();b.classList.add('over')}});
+$('#cal').addEventListener('dragleave',e=>{const b=e.target.closest('[data-d]');if(b)b.classList.remove('over')});
+$('#cal').addEventListener('drop',e=>{const b=e.target.closest('[data-d]');if(!b||b.disabled)return;e.preventDefault();b.classList.remove('over');
+  const fs=[...e.dataTransfer.files];if(fs.length===1){state.sel=b.dataset.d;handleFiles(fs,b.dataset.d)}else handleFiles(fs)});
+$('#upBtn').addEventListener('click',()=>$('#file').click());
+$('#manyBtn').addEventListener('click',()=>$('#fileMany').click());
+$('#file').addEventListener('change',e=>{handleFiles(e.target.files,state.sel);e.target.value=''});
+$('#fileMany').addEventListener('change',e=>{handleFiles(e.target.files);e.target.value=''});
+$('#delBtn').addEventListener('click',()=>deleteDay(state.sel));
+$('#holBtn').addEventListener('click',()=>toggleHoliday(state.sel));
+$('#nextBtn').addEventListener('click',()=>selectDay(nextTD(state.sel)));
+$('#sample').addEventListener('click',()=>loadSample());
+const drop=$('#drop');
+['dragenter','dragover'].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.add('over')}));
+['dragleave','drop'].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.remove('over')}));
+drop.addEventListener('drop',e=>handleFiles(e.dataTransfer.files,state.sel));
+$('#bulk').addEventListener('change',e=>{const i=e.target.dataset&&e.target.dataset.i;if(i!=null&&state.bulk){state.bulk.rows[+i].date=e.target.value||null;renderBulk()}});
+$('#bulk').addEventListener('click',e=>{
+  const b=state.bulk;if(!b)return;
+  const x=e.target.closest('[data-x]');
+  if(x){b.rows.splice(+x.dataset.x,1);if(!b.rows.length)state.bulk=null;renderBulk();return}
+  if(e.target.closest('#bRe')){const v=$('#bStart').value;if(ISO_RE.test(v)){b.start=v;b.rows.forEach(r=>{if(!r.fd)r.date=null});autoAssign(b.rows,v);renderBulk()}return}
+  if(e.target.closest('#bSave'))saveBulk();
+  if(e.target.closest('#bCancel')){state.bulk=null;renderBulk();setMsg('Cancelled. Nothing was saved.')}
+});
+$('#bkCopy').addEventListener('click',async()=>{
+  const t=backupText(),ta=$('#bkText');ta.value=t;
+  try{await navigator.clipboard.writeText(t);setMsg('Backup copied. Paste it somewhere safe, such as a note or a file.')}
+  catch(e){ta.focus();ta.select();setMsg('Your browser blocked automatic copy. The backup text is selected in the box below, so copy it by hand.')}
+});
+$('#bkRestore').addEventListener('click',()=>{try{restore($('#bkText').value.trim())}catch(e){setErr(e.message)}});
+let clearT=null;
+$('#clearBtn').addEventListener('click',()=>{
+  const b=$('#clearBtn');
+  if(!clearT){b.textContent='Click again to clear';clearT=setTimeout(()=>{clearT=null;b.textContent="Clear this type's history"},4000);return}
+  clearTimeout(clearT);clearT=null;b.textContent="Clear this type's history";
+  try{localStorage.removeItem(hk(state.mode))}catch(e){}
+  loadSample(true);setMsg(`Cleared all saved ${typeLabel(state.mode)} days.`);renderAll();
+});
+$('#themeBtn').addEventListener('click',()=>{
+  const el=document.documentElement,cur=el.dataset.theme||(matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');
+  const nx=cur==='dark'?'light':'dark';el.dataset.theme=nx;try{localStorage.setItem('w52.theme',nx)}catch(e){}
+});
+try{const t=localStorage.getItem('w52.theme');if(t)document.documentElement.dataset.theme=t}catch(e){}
+const tip=$('#tip');
+document.addEventListener('pointerover',e=>{const t=e.target.closest&&e.target.closest('[data-tip]');if(t){tip.innerHTML=t.dataset.tip;tip.hidden=false}else tip.hidden=true});
+document.addEventListener('pointermove',e=>{if(tip.hidden)return;tip.style.left=Math.max(8,Math.min(e.clientX+14,innerWidth-tip.offsetWidth-8))+'px';tip.style.top=Math.max(8,Math.min(e.clientY+14,innerHeight-tip.offsetHeight-8))+'px'});
+document.addEventListener('pointerleave',()=>{tip.hidden=true});
+
+(function boot(){
+  try{const m=localStorage.getItem('w52.mode');if(m==='low'||m==='high')state.mode=m}catch(e){}
+  state.sort=defSort(state.mode);
+  if(!Object.keys(loadHist(state.mode)).length){const o=state.mode==='low'?'high':'low';if(Object.keys(loadHist(o)).length)state.mode=o}
+  const ks=Object.keys(loadHist(state.mode)).sort();
+  initSel();
+  if(ks.length){
+    openDay(ks[ks.length-1],state.mode);
+    setMsg(`Loaded your saved history. Latest ${typeLabel(state.mode)} day is ${dispLong(ks[ks.length-1])}. The calendar is set to the next day to fill.`);renderAll();
+  }else loadSample();
+})();
+
+</script>
